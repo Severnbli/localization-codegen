@@ -44,21 +44,21 @@ $VersionFiles = @(
         Description = "Unity package version"
     },
     @{
-        Path        = "Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Installer.cs"
+        Path        = "Installer/Assets/Editor/Localization Codegen Installer/Installer.cs"
         Pattern     = 'public const string Version = "[\d\.]+";'
         Replace     = 'public const string Version = "{VERSION}";'
         Description = "Installer C# version constant"
     },
     @{
         Path        = "Unity-Package/Assets/root/README.md"
-        Pattern     = "https://github\.com/YOUR_GITHUB_USERNAME_REPOSITORY/releases/download/[\d\.]+/YOUR_PACKAGE_NAME_INSTALLER_FILE\.unitypackage"
-        Replace     = "https://github.com/YOUR_GITHUB_USERNAME_REPOSITORY/releases/download/{VERSION}/YOUR_PACKAGE_NAME_INSTALLER_FILE.unitypackage"
+        Pattern     = "https://github\.com/https://github.com/Severnbli/localization-codegen.git/releases/download/[\d\.]+/Localization-Codegen-Installer\.unitypackage"
+        Replace     = "https://github.com/https://github.com/Severnbli/localization-codegen.git/releases/download/{VERSION}/Localization-Codegen-Installer.unitypackage"
         Description = "Package README download URL"
     },
     @{
         Path        = "README.md"
-        Pattern     = "https://github\.com/YOUR_GITHUB_USERNAME_REPOSITORY/releases/download/[\d\.]+/YOUR_PACKAGE_NAME_INSTALLER_FILE\.unitypackage"
-        Replace     = "https://github.com/YOUR_GITHUB_USERNAME_REPOSITORY/releases/download/{VERSION}/YOUR_PACKAGE_NAME_INSTALLER_FILE.unitypackage"
+        Pattern     = "https://github\.com/https://github.com/Severnbli/localization-codegen.git/releases/download/[\d\.]+/Localization-Codegen-Installer\.unitypackage"
+        Replace     = "https://github.com/https://github.com/Severnbli/localization-codegen.git/releases/download/{VERSION}/Localization-Codegen-Installer.unitypackage"
         Description = "Repository README download URL"
     }
 )

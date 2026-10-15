@@ -71,10 +71,10 @@ if (-not $EditorsPath -or -not (Test-Path $EditorsPath)) {
 # Define projects to open
 $Projects = @(
     "Installer",
-    "Unity-Package",
-    "Unity-Tests/2022.3.62f3",
-    "Unity-Tests/2023.2.22f1",
-    "Unity-Tests/6000.3.1f1"
+    "Unity-Package"
+#    "Unity-Tests/2022.3.62f3",
+#    "Unity-Tests/2023.2.22f1",
+#    "Unity-Tests/6000.3.1f1"
 )
 
 Write-Host "Opening Unity projects..." -ForegroundColor Cyan

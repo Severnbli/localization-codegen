@@ -1,0 +1,17 @@
+{
+    "name": "com.severnbli.localization-codegen.Runtime",
+    "references": [
+        "Unity.Localization"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [
+        "Editor"
+    ],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

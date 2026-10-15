@@ -1,0 +1,20 @@
+{
+    "name": "com.severnbli.localization-codegen.Tests",
+    "references": [
+        "UnityEngine.TestRunner",
+        "com.severnbli.localization-codegen.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,16 @@
+{
+    "name": "com.severnbli.localization-codegen.Installer",
+    "rootNamespace": "com.severnbli.localization-codegen.Installer",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

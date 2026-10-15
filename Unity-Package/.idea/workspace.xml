@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="354c3748-4de8-4d57-aa9b-0c2f59bbf447" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../.github/workflows/release.yml-sample" beforeDir="false" afterPath="$PROJECT_DIR$/../.github/workflows/release.yml-sample" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Installer.Manifest.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Installer.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/PackageExporter.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/SimpleJSON.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/Correct/correct_manifest.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopedregistries_empty_1.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopedregistries_empty_2.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopedregistries_gone.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopes_empty.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopes_gone.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopes_partial_1.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopes_partial_2.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopes_partial_3.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopes_partial_4.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/Files/scopes_partial_5.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/ManifestInstallerTests.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/VersionComparisonTests.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/Tests/YOUR_PACKAGE_ID.Installer.Tests.asmdef" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Installer/Assets/YOUR_PACKAGE_NAME_INSTALLER/YOUR_PACKAGE_ID.Installer.asmdef" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/root/Editor/Gizmos/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/root/Editor/Gizmos/icon.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/root/Editor/Scripts/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/root/Editor/Scripts/YOUR_PACKAGE_ID.Editor.asmdef" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/root/Runtime/YOUR_PACKAGE_ID.Runtime.asmdef" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/root/Tests/Editor/YOUR_PACKAGE_ID.Editor.Tests.asmdef" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/root/Tests/Runtime/YOUR_PACKAGE_ID.Tests.asmdef" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/root/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/root/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Unity-Tests/2022.3.62f3/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/../Unity-Tests/2022.3.62f3/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Unity-Tests/2023.2.22f1/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/../Unity-Tests/2023.2.22f1/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Unity-Tests/6000.3.1f1/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/../Unity-Tests/6000.3.1f1/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../commands/bump-version.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/../commands/bump-version.ps1" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../commands/open-all-projects-windows.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/../commands/open-all-projects-windows.ps1" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_C:/Users/Usevalad/dungeon/unity/localization-codegen/Unity-Package" value="3Kk6NfNuzcDKdOtZoAV1mZJ0MGE" />
+    </persistenceIdMap>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Severnbli"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "git@github.com:Severnbli/localization-codegen.git",
+    "accountId": "c5c13844-62a1-42ef-b257-6193bf8c1ed7"
+  }
+}]]></component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 5,
+  "fromUser": false
+}]]></component>
+  <component name="ProjectId" id="3Kk6CCGYxT5DqL1lDOpXnqlzJDm" />
+  <component name="ProjectSessionTemplates">
+    <option name="panelTemplate">
+      <template>
+        <option name="modeId" value="Agent" />
+        <option name="model">
+          <model>
+            <option name="modelType" value="builtin_id" />
+            <option name="modelValue" value="auto" />
+          </model>
+        </option>
+        <option name="targetType" value="BACKGROUND" />
+        <option name="worktreeMode" value="WORKSPACE" />
+      </template>
+    </option>
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "cidr.known.project.marker": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "copilot.chat.legacySessionMetadata.migrated": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="354c3748-4de8-4d57-aa9b-0c2f59bbf447" name="Changes" comment="" />
+      <created>1792089090116</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1792089090116</updated>
+      <workItem from="1792089090117" duration="788000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
+  <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
+  <component name="UnityProjectDiscoverer">
+    <option name="unityProjectFolder" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
+          <option name="timeStamp" value="1" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
+          <option name="timeStamp" value="3" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

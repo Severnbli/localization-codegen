@@ -24,7 +24,7 @@ Use the initialization script to rename the package and replace all placeholders
 
 This script will:
 - Rename directories and files.
-- Replace `YOUR_PACKAGE_ID`, `YOUR_PACKAGE_NAME`, etc. in all files and folder names.
+- Replace `com.severnbli.localization-codegen`, `Localization Codegen`, etc. in all files and folder names.
 
 ### 4️⃣ Update `package.json`
 Open `Unity-Package/Assets/root/package.json` and update:
@@ -166,7 +166,7 @@ When your package is distributed, you can install it into any Unity project.
 - Execute the command (for `OpenUPM` hosted package)
 
   ```bash
-  openupm add YOUR_PACKAGE_NAME
+  openupm add Localization Codegen
   ```
 
 # Final view in Unity Package Manager

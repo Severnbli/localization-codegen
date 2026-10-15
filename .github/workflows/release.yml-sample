@@ -159,16 +159,16 @@ jobs:
           projectPath: ./Installer
           unityVersion: ${{ env.INSTALLER_UNITY_VERSION }}
           customImage: "unityci/editor:ubuntu-${{ env.INSTALLER_UNITY_VERSION }}-base-3"
-          buildName: YOUR_PACKAGE_NAME_INSTALLER_FILE
+          buildName: Localization-Codegen-Installer
           buildsPath: build
-          buildMethod: YOUR_PACKAGE_ID.Installer.PackageExporter.ExportPackage
+          buildMethod: com.severnbli.localization-codegen.Installer.PackageExporter.ExportPackage
           customParameters: -CI true -GITHUB_ACTIONS true
 
       - name: Upload Unity Package as artifact
         uses: actions/upload-artifact@v4
         with:
           name: unity-installer-package
-          path: ./Installer/build/YOUR_PACKAGE_NAME_INSTALLER_FILE.unitypackage
+          path: ./Installer/build/Localization-Codegen-Installer.unitypackage
 
   # Builds the signed UPM package (.tgz with package/.attestation.p7m) in parallel
   # with tests/builds and uploads it as a `signed-upm-package` artifact for the
@@ -242,13 +242,13 @@ jobs:
 
           archive="${archives[0]}"
           archive_basename="$(basename "$archive")"
-          # OpenUPM consumes the asset via the `githubReleaseAssetName: 'YOUR_PACKAGE_ID-'`
+          # OpenUPM consumes the asset via the `githubReleaseAssetName: 'com.severnbli.localization-codegen-'`
           # prefix documented in docs/openupm-signing.md. Enforce the contract here so a future
           # `upm pack` naming change fails CI loudly instead of silently breaking OpenUPM pickup.
-          # NOTE: replace `YOUR_PACKAGE_ID` below with your real package id (e.g. com.company.package)
+          # NOTE: replace `com.severnbli.localization-codegen` below with your real package id (e.g. com.company.package)
           # when you adopt this sample as release.yml.
-          if [[ "$archive_basename" != YOUR_PACKAGE_ID-* ]]; then
-            printf 'Signed archive basename %q does not begin with the OpenUPM-expected prefix YOUR_PACKAGE_ID- (see docs/openupm-signing.md)\n' "$archive_basename" >&2
+          if [[ "$archive_basename" != com.severnbli.localization-codegen-* ]]; then
+            printf 'Signed archive basename %q does not begin with the OpenUPM-expected prefix com.severnbli.localization-codegen- (see docs/openupm-signing.md)\n' "$archive_basename" >&2
             exit 1
           fi
 
@@ -421,8 +421,8 @@ jobs:
           prerelease: false
           fail_on_unmatched_files: true
           files: |
-            ./assets/YOUR_PACKAGE_NAME_INSTALLER_FILE.unitypackage
-            ./assets/YOUR_PACKAGE_ID-*.tgz
+            ./assets/Localization-Codegen-Installer.unitypackage
+            ./assets/com.severnbli.localization-codegen-*.tgz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

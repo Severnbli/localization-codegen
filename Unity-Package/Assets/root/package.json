@@ -1,16 +1,19 @@
 {
-    "name": "YOUR_PACKAGE_ID_LOWERCASE",
-    "displayName": "YOUR_PACKAGE_NAME",
+    "name": "com.severnbli.localization-codegen",
+    "displayName": "Localization Codegen",
     "author": {
-        "name": "Your_Name",
-        "url": "https://github.com/Your_Name"
+        "name": "Severnbli",
+        "url": "https://github.com/Severnbli"
     },
     "keywords": [
-        "keyword1",
-        "keyword2"
+        "Unity Localization",
+        "Generation",
+		"Code Generation"
     ],
     "version": "1.0.0",
-    "unity": "2019.4",
-    "description": "Some description",
-    "dependencies": {}
+    "unity": "2021.3",
+    "description": "C# classes and properties generator from Unity Localization tables",
+    "dependencies": {
+		"com.unity.localization": "1.5.13"
+	}
 }
