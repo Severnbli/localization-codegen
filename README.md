@@ -1,3 +1,5 @@
+<img width="600" height="300" alt="Untitled" src="https://github.com/user-attachments/assets/6d1ab63f-b0d2-4540-a17f-e6964cad5e07" />
+
 # Localization Codegen
 
 Generates strongly typed C# classes from [Unity Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.5/manual/index.html) table collections, so you can write `Ui.PlayerName` instead of calling the localization database with magic strings.
