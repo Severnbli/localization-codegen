@@ -8,7 +8,8 @@ namespace Severnbli.LocalizationCodegen.Editor
         public static void Open()
         {
             var window = GetWindow<SetupWizard>(true, "Localization Codegen Setup");
-            window.minSize = window.maxSize = new Vector2(420, 260);
+            window.minSize = new Vector2(460, 360);
+            window.maxSize = new Vector2(460, 360);
         }
 
         void OnGUI()
@@ -16,19 +17,26 @@ namespace Severnbli.LocalizationCodegen.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Welcome to Localization Codegen", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "C# classes will be generated for every Unity Localization table collection, e.g. Ui.PlayerName. " +
-                "You can change these settings later in Window > Localization Codegen.", MessageType.Info);
+                "A C# class will be generated for every Unity Localization table collection. " +
+                "Each key becomes a strongly typed property, e.g. Ui.PlayerName. " +
+                "You can change these settings later in Window > Localization Codegen.",
+                MessageType.Info);
             EditorGUILayout.Space();
 
+            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             SettingsGui.Draw();
 
             GUILayout.FlexibleSpace();
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("Skip", GUILayout.Height(26)))
+                if (GUILayout.Button("Skip", GUILayout.Height(28)))
                     Finish(false);
-                if (GUILayout.Button("Finish and Generate", GUILayout.Height(26)))
-                    Finish(true);
+
+                using (new EditorGUI.DisabledScope(!SettingsGui.IsOutputFolderValid(out _)))
+                {
+                    if (GUILayout.Button("Finish and Generate", GUILayout.Height(28)))
+                        Finish(true);
+                }
             }
         }
 
