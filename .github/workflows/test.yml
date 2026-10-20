@@ -1,4 +1,4 @@
-name: test-pull-request
+name: test
 
 on:
   workflow_dispatch:
@@ -10,14 +10,24 @@ on:
     paths:
       - "Unity-Package/**"
       - "Unity-Tests/**"
-      - ".github/workflows/test_pull_request.yml"
+      - ".github/workflows/test.yml"
+      - ".github/workflows/test_unity_plugin.yml"
+      - "!**.md"
+      - "!Unity-Package/Assets/root/Documentation~/**"
+  # Pushes to main only run tests. Releases are triggered manually.
+  push:
+    branches: [main]
+    paths:
+      - "Unity-Package/**"
+      - "Unity-Tests/**"
+      - ".github/workflows/test.yml"
       - ".github/workflows/test_unity_plugin.yml"
       - "!**.md"
       - "!Unity-Package/Assets/root/Documentation~/**"
 
-# A new push to the same PR cancels the previous (expensive) Unity run.
+# A new push to the same PR (or main) cancels the previous (expensive) Unity run.
 concurrency:
-  group: pr-${{ github.event.pull_request.number || github.ref }}
+  group: test-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
