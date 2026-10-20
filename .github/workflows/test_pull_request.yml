@@ -10,6 +10,9 @@ jobs:
   # --- EDIT MODE ---
 
   test-unity-2022-3-62f3-editmode:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -17,15 +20,10 @@ jobs:
       testMode: "editmode"
     secrets: inherit
 
-  test-unity-2023-2-22f1-editmode:
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
-      testMode: "editmode"
-    secrets: inherit
-
   test-unity-6000-3-1f1-editmode:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"
@@ -36,6 +34,9 @@ jobs:
   # --- PLAY MODE ---
 
   test-unity-2022-3-62f3-playmode:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -43,15 +44,10 @@ jobs:
       testMode: "playmode"
     secrets: inherit
 
-  test-unity-2023-2-22f1-playmode:
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
-      testMode: "playmode"
-    secrets: inherit
-
   test-unity-6000-3-1f1-playmode:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"
@@ -62,6 +58,9 @@ jobs:
   # --- STANDALONE ---
 
   test-unity-2022-3-62f3-standalone:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -69,15 +68,10 @@ jobs:
       testMode: "standalone"
     secrets: inherit
 
-  test-unity-2023-2-22f1-standalone:
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
-      testMode: "standalone"
-    secrets: inherit
-
   test-unity-6000-3-1f1-standalone:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"

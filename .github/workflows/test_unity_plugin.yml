@@ -16,6 +16,13 @@ on:
       UNITY_PASSWORD: { required: true }
 
 ##############################################################################
+# 1-b. Permissions – allow the test-runner to publish results as a check run
+##############################################################################
+permissions:
+  contents: read
+  checks: write
+
+##############################################################################
 # 2. Job – runs only after a maintainer applies the `ci-ok` label
 ##############################################################################
 jobs:
@@ -31,10 +38,6 @@ jobs:
 
     name: ${{ inputs.unityVersion }} ${{ inputs.testMode }} on ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
-
-    # permissions: # minimize the default token
-    #   contents: write
-    #   pull-requests: write
 
     steps:
       # --------------------------------------------------------------------- #

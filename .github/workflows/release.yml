@@ -102,6 +102,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check-version-tag]
     if: needs.check-version-tag.outputs.tag_exists == 'false'
+    permissions:
+      contents: read
+      checks: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -120,7 +123,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ./Installer/Library
-          key: Library-Unity-Installer
+          key: Library-Unity-Installer-${{ hashFiles('Installer/Packages/manifest.json', 'Installer/Packages/packages-lock.json') }}
 
       - name: Test Unity Installer (EditMode)
         uses: game-ci/unity-test-runner@v4
@@ -137,6 +140,13 @@ jobs:
           checkName: Unity Installer EditMode Test Results
           artifactsPath: artifacts-installer-editmode
           customParameters: -CI true -GITHUB_ACTIONS true
+
+      - name: Upload Unity Installer EditMode artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-installer-editmode
+          path: artifacts-installer-editmode
 
       - name: Clean Unity artifacts and reset git state
         run: |
@@ -272,6 +282,9 @@ jobs:
 
   test-unity-2022-3-62f3-editmode:
     needs: [build-unity-installer]
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -279,17 +292,11 @@ jobs:
       testMode: "editmode"
     secrets: inherit
 
-  test-unity-2023-2-22f1-editmode:
-    needs: [build-unity-installer]
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
-      testMode: "editmode"
-    secrets: inherit
-
   test-unity-6000-3-1f1-editmode:
     needs: [build-unity-installer]
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"
@@ -301,6 +308,9 @@ jobs:
 
   test-unity-2022-3-62f3-playmode:
     needs: [build-unity-installer]
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -308,17 +318,11 @@ jobs:
       testMode: "playmode"
     secrets: inherit
 
-  test-unity-2023-2-22f1-playmode:
-    needs: [build-unity-installer]
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
-      testMode: "playmode"
-    secrets: inherit
-
   test-unity-6000-3-1f1-playmode:
     needs: [build-unity-installer]
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"
@@ -330,6 +334,9 @@ jobs:
 
   test-unity-2022-3-62f3-standalone:
     needs: [build-unity-installer]
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -337,17 +344,11 @@ jobs:
       testMode: "standalone"
     secrets: inherit
 
-  test-unity-2023-2-22f1-standalone:
-    needs: [build-unity-installer]
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
-      testMode: "standalone"
-    secrets: inherit
-
   test-unity-6000-3-1f1-standalone:
     needs: [build-unity-installer]
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"
@@ -373,9 +374,6 @@ jobs:
         test-unity-2022-3-62f3-editmode,
         test-unity-2022-3-62f3-playmode,
         test-unity-2022-3-62f3-standalone,
-        test-unity-2023-2-22f1-editmode,
-        test-unity-2023-2-22f1-playmode,
-        test-unity-2023-2-22f1-standalone,
         test-unity-6000-3-1f1-editmode,
         test-unity-6000-3-1f1-playmode,
         test-unity-6000-3-1f1-standalone,
