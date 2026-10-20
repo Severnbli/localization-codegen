@@ -1,4 +1,4 @@
-<img width="600" height="300" alt="Untitled" src="https://github.com/user-attachments/assets/6d1ab63f-b0d2-4540-a17f-e6964cad5e07" />
+<img width="600" height="300" alt="Logo" src="https://github.com/user-attachments/assets/c43737d6-e7a0-416a-9aa5-fa3ca2466529" />
 
 # Localization Codegen
 
