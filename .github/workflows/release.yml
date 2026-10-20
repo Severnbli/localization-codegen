@@ -286,15 +286,6 @@ jobs:
       testMode: "editmode"
     secrets: inherit
 
-  test-unity-2023-2-22f1-editmode:
-    needs: [build-unity-installer]
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
-      testMode: "editmode"
-    secrets: inherit
-
   test-unity-6000-3-1f1-editmode:
     needs: [build-unity-installer]
     uses: ./.github/workflows/test_unity_plugin.yml
@@ -315,15 +306,6 @@ jobs:
       testMode: "playmode"
     secrets: inherit
 
-  test-unity-2023-2-22f1-playmode:
-    needs: [build-unity-installer]
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
-      testMode: "playmode"
-    secrets: inherit
-
   test-unity-6000-3-1f1-playmode:
     needs: [build-unity-installer]
     uses: ./.github/workflows/test_unity_plugin.yml
@@ -341,15 +323,6 @@ jobs:
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
       unityVersion: "2022.3.62f3"
-      testMode: "standalone"
-    secrets: inherit
-
-  test-unity-2023-2-22f1-standalone:
-    needs: [build-unity-installer]
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2023.2.22f1"
-      unityVersion: "2023.2.22f1"
       testMode: "standalone"
     secrets: inherit
 
@@ -380,9 +353,6 @@ jobs:
         test-unity-2022-3-62f3-editmode,
         test-unity-2022-3-62f3-playmode,
         test-unity-2022-3-62f3-standalone,
-        test-unity-2023-2-22f1-editmode,
-        test-unity-2023-2-22f1-playmode,
-        test-unity-2023-2-22f1-standalone,
         test-unity-6000-3-1f1-editmode,
         test-unity-6000-3-1f1-playmode,
         test-unity-6000-3-1f1-standalone,
