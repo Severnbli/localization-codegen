@@ -5,78 +5,31 @@ on:
   pull_request:
     branches: [main, dev]
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+
+# A new push to the same PR cancels the previous (expensive) Unity run.
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  # --- EDIT MODE ---
-
-  test-unity-2022-3-62f3-editmode:
+  test-unity:
     permissions:
       contents: read
       checks: write
+    strategy:
+      fail-fast: false
+      matrix:
+        unityVersion: [2022.3.62f3, 6000.3.1f1]
+        testMode: [editmode, playmode, standalone]
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
-      projectPath: "./Unity-Tests/2022.3.62f3"
-      unityVersion: "2022.3.62f3"
-      testMode: "editmode"
+      projectPath: ./Unity-Tests/${{ matrix.unityVersion }}
+      unityVersion: ${{ matrix.unityVersion }}
+      testMode: ${{ matrix.testMode }}
     secrets: inherit
-
-  test-unity-6000-3-1f1-editmode:
-    permissions:
-      contents: read
-      checks: write
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/6000.3.1f1"
-      unityVersion: "6000.3.1f1"
-      testMode: "editmode"
-    secrets: inherit
-
-  # --- PLAY MODE ---
-
-  test-unity-2022-3-62f3-playmode:
-    permissions:
-      contents: read
-      checks: write
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2022.3.62f3"
-      unityVersion: "2022.3.62f3"
-      testMode: "playmode"
-    secrets: inherit
-
-  test-unity-6000-3-1f1-playmode:
-    permissions:
-      contents: read
-      checks: write
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/6000.3.1f1"
-      unityVersion: "6000.3.1f1"
-      testMode: "playmode"
-    secrets: inherit
-
-  # --- STANDALONE ---
-
-  test-unity-2022-3-62f3-standalone:
-    permissions:
-      contents: read
-      checks: write
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/2022.3.62f3"
-      unityVersion: "2022.3.62f3"
-      testMode: "standalone"
-    secrets: inherit
-
-  test-unity-6000-3-1f1-standalone:
-    permissions:
-      contents: read
-      checks: write
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: "./Unity-Tests/6000.3.1f1"
-      unityVersion: "6000.3.1f1"
-      testMode: "standalone"
-    secrets: inherit
-
-  # -------------------
