@@ -10,7 +10,7 @@
         "Generation",
 		"Code Generation"
     ],
-    "version": "1.0.3",
+    "version": "1.0.4",
     "unity": "2021.3",
     "description": "C# classes and properties generator from Unity Localization tables",
     "dependencies": {
