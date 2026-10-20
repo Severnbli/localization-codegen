@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.severnbli.localization-codegen": "file:../Assets/root",
     "com.unity.localization": "1.5.13",
     "com.unity.multiplayer.center": "2.0.1",
     "com.unity.sdk.linux-x86_64": "1.1.0",

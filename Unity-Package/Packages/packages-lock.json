@@ -1,13 +1,5 @@
 {
   "dependencies": {
-    "com.severnbli.localization-codegen": {
-      "version": "file:../Assets/root",
-      "depth": 0,
-      "source": "local",
-      "dependencies": {
-        "com.unity.localization": "1.5.13"
-      }
-    },
     "com.unity.addressables": {
       "version": "2.11.2",
       "depth": 1,
