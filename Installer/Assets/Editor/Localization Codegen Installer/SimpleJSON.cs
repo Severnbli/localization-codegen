@@ -40,7 +40,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace com.severnbli.localization-codegen.Installer.SimpleJSON
+namespace Severnbli.LocalizationCodegen.Installer.SimpleJSON
 {
     public enum JSONNodeType
     {

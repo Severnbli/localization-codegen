@@ -11,11 +11,11 @@
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using com.severnbli.localization-codegen.Installer.SimpleJSON;
+using Severnbli.LocalizationCodegen.Installer.SimpleJSON;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("com.severnbli.localization-codegen.Installer.Tests")]
-namespace com.severnbli.localization-codegen.Installer
+namespace Severnbli.LocalizationCodegen.Installer
 {
     public static partial class Installer
     {

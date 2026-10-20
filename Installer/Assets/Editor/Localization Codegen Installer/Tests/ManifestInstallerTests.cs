@@ -11,7 +11,7 @@ using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace com.severnbli.localization-codegen.Installer.Tests
+namespace Severnbli.LocalizationCodegen.Installer.Tests
 {
     public class ManifestInstallerTests
     {

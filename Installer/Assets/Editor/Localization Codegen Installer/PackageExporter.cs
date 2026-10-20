@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
-namespace com.severnbli.localization-codegen.Installer
+namespace Severnbli.LocalizationCodegen.Installer
 {
     public static class PackageExporter
     {

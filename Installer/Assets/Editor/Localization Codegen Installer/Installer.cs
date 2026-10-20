@@ -10,7 +10,7 @@
 #nullable enable
 using UnityEditor;
 
-namespace com.severnbli.localization-codegen.Installer
+namespace Severnbli.LocalizationCodegen.Installer
 {
     [InitializeOnLoad]
     public static partial class Installer

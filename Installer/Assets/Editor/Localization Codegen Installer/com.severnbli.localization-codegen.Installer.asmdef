@@ -1,6 +1,6 @@
 {
     "name": "com.severnbli.localization-codegen.Installer",
-    "rootNamespace": "com.severnbli.localization-codegen.Installer",
+    "rootNamespace": "Severnbli.LocalizationCodegen.Installer",
     "references": [],
     "includePlatforms": [
         "Editor"

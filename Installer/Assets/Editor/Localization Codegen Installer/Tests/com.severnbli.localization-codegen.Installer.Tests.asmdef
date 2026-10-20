@@ -1,6 +1,6 @@
 {
     "name": "com.severnbli.localization-codegen.Installer.Tests",
-    "rootNamespace": "com.severnbli.localization-codegen.Installer.Tests",
+    "rootNamespace": "Severnbli.LocalizationCodegen.Installer.Tests",
     "references": [
         "com.severnbli.localization-codegen.Installer"
     ],

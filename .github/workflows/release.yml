@@ -161,7 +161,7 @@ jobs:
           customImage: "unityci/editor:ubuntu-${{ env.INSTALLER_UNITY_VERSION }}-base-3"
           buildName: Localization-Codegen-Installer
           buildsPath: build
-          buildMethod: com.severnbli.localization-codegen.Installer.PackageExporter.ExportPackage
+          buildMethod: Severnbli.LocalizationCodegen.Installer.PackageExporter.ExportPackage
           customParameters: -CI true -GITHUB_ACTIONS true
 
       - name: Upload Unity Package as artifact

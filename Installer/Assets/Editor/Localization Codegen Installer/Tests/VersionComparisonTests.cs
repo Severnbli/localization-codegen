@@ -9,9 +9,9 @@
 */
 using System.IO;
 using NUnit.Framework;
-using com.severnbli.localization-codegen.Installer.SimpleJSON;
+using Severnbli.LocalizationCodegen.Installer.SimpleJSON;
 
-namespace com.severnbli.localization-codegen.Installer.Tests
+namespace Severnbli.LocalizationCodegen.Installer.Tests
 {
     public class VersionComparisonTests
     {
