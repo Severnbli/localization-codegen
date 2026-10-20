@@ -10,6 +10,9 @@ jobs:
   # --- EDIT MODE ---
 
   test-unity-2022-3-62f3-editmode:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -18,6 +21,9 @@ jobs:
     secrets: inherit
 
   test-unity-6000-3-1f1-editmode:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"
@@ -28,6 +34,9 @@ jobs:
   # --- PLAY MODE ---
 
   test-unity-2022-3-62f3-playmode:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -36,6 +45,9 @@ jobs:
     secrets: inherit
 
   test-unity-6000-3-1f1-playmode:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"
@@ -46,6 +58,9 @@ jobs:
   # --- STANDALONE ---
 
   test-unity-2022-3-62f3-standalone:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/2022.3.62f3"
@@ -54,6 +69,9 @@ jobs:
     secrets: inherit
 
   test-unity-6000-3-1f1-standalone:
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/test_unity_plugin.yml
     with:
       projectPath: "./Unity-Tests/6000.3.1f1"
