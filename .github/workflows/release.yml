@@ -1,12 +1,11 @@
 name: release
 
+# Releases are published only on demand. The workflow runs the full Unity test
+# matrix itself, so a manually triggered release is still gated on green tests.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
-# Two quick pushes to main must not race on the same tag. Queue, don't cancel.
+# Two concurrent manual runs must not race on the same tag. Queue, don't cancel.
 concurrency:
   group: release
   cancel-in-progress: false
