@@ -180,6 +180,7 @@ jobs:
         with:
           projectPath: ./Installer
           unityVersion: ${{ env.INSTALLER_UNITY_VERSION }}
+          targetPlatform: StandaloneLinux64
           customImage: "unityci/editor:ubuntu-${{ env.INSTALLER_UNITY_VERSION }}-base-3"
           buildName: Localization-Codegen-Installer
           buildsPath: build
