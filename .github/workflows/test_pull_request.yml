@@ -5,9 +5,15 @@ on:
   pull_request:
     branches: [main, dev]
     types: [opened, synchronize, reopened]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
+    # Only run when something the plugin tests actually depend on changes.
+    # (paths and paths-ignore can't be combined; "!" patterns exclude from the list above them.)
+    paths:
+      - "Unity-Package/**"
+      - "Unity-Tests/**"
+      - ".github/workflows/test_pull_request.yml"
+      - ".github/workflows/test_unity_plugin.yml"
+      - "!**.md"
+      - "!Unity-Package/Assets/root/Documentation~/**"
 
 # A new push to the same PR cancels the previous (expensive) Unity run.
 concurrency:
