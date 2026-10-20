@@ -104,7 +104,7 @@ jobs:
           fi
 
       - name: Upload release notes as artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-notes
           path: ./release.md
@@ -155,7 +155,7 @@ jobs:
 
       - name: Upload Unity Installer EditMode artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: artifacts-installer-editmode
           path: artifacts-installer-editmode
@@ -187,7 +187,7 @@ jobs:
           customParameters: -CI true -GITHUB_ACTIONS true
 
       - name: Upload Unity Package as artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unity-installer-package
           path: ./Installer/build/Localization-Codegen-Installer.unitypackage
@@ -305,7 +305,7 @@ jobs:
           tar -xOzf "$archive" package/package.json | jq '{name, version}'
 
       - name: Upload signed UPM package as artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: signed-upm-package
           path: /tmp/signed-upm-dist/*.tgz
