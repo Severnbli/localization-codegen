@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &1
+MonoBehaviour:
+  m_ObjectHideFlags: 53
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d38a1b09154f9034daa34d91e695178e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: com.severnbli.localization-codegen.Editor::Severnbli.LocalizationCodegen.Editor.CodegenSettings
+  settingsVersion: 2
+  setupCompleted: 0
+  outputFolder: Assets/Generated/Localization
+  generatedNamespace: Localization
+  autoRegenerate: 1
+  generateStringTables: 1
+  generateAssetTables: 1
+  lastOutputFolder: 
+  generatedPaths: []
+  lastAsmdefPath: 
+  lastModelHash: 
+  collectionHashes: []
+  useRuntimeAlias: 1
+  generateReferences: 0
+  generateXmlDocs: 0
+  smartStrings: 0
+  namingConvention: 0
+  keySeparators: 
+  smartParamTypes: 0
+  generateAsmdef: 0
+  failOnSmartStringMismatch: 0
