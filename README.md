@@ -5,7 +5,7 @@
 <h1>Localization Codegen</h1>
 
 <p>
-  <strong>Strongly typed C# access to your Unity Localization tables.</strong><br/>
+  <strong>Strongly typed C# access to your Unity Localization tables</strong><br/>
   Write code instead of hitting the localization database with magic strings
 </p>
 
