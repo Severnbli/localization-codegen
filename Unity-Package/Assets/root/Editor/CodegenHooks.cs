@@ -1,49 +1,121 @@
 ﻿using UnityEditor;
 using UnityEditor.Localization;
+using UnityEngine;
 
 namespace Severnbli.LocalizationCodegen.Editor
 {
+    /// <summary>
+    /// Coalesces localization editor events into one debounced generation pass.
+    /// The dirty flag lives in <see cref="SessionState"/> so it survives a domain reload.
+    /// </summary>
     [InitializeOnLoad]
-    static class CodegenHooks
+    internal static class CodegenHooks
     {
-        static bool s_Pending;
+        const string DirtyKey = "LocalizationCodegen.Dirty";
+        const string WizardShownKey = "LocalizationCodegen.WizardShown";
+
+        const double DebounceSeconds = 0.5;
+
+        static double s_LastDirtyTime;
+        static bool s_StalenessCheckPending = true;
 
         static CodegenHooks()
         {
-            var events = LocalizationEditorSettings.EditorEvents;
-            events.CollectionAdded += _ => Schedule();
-            events.CollectionRemoved += _ => Schedule();
-            events.CollectionModified += (_, __) => Schedule();
-            events.TableEntryAdded += (_, __) => Schedule();
-            events.TableEntryRemoved += (_, __) => Schedule();
-            events.TableEntryModified += _ => Schedule();
-            events.AssetTableEntryAdded += (_, __, ___) => Schedule();
-            events.AssetTableEntryRemoved += (_, __, ___, ____) => Schedule();
+            var settings = CodegenSettings.instance;
+            settings.EnsureMigrated();
 
-            EditorApplication.delayCall += () =>
-            {
-                if (!CodegenSettings.instance.SetupCompleted)
-                    SetupWizard.Open();
-            };
+            var events = LocalizationEditorSettings.EditorEvents;
+            events.CollectionAdded += _ => MarkDirtyExternal();
+            events.CollectionRemoved += _ => MarkDirtyExternal();
+            events.CollectionModified += (_, __) => MarkDirtyExternal();
+            events.TableEntryAdded += (_, __) => MarkDirtyExternal();
+            events.TableEntryRemoved += (_, __) => MarkDirtyExternal();
+            events.TableEntryModified += _ => MarkDirtyExternal();
+            events.AssetTableEntryAdded += (_, __, ___) => MarkDirtyExternal();
+            events.AssetTableEntryRemoved += (_, __, ___, ____) => MarkDirtyExternal();
+            events.LocaleAdded += _ => MarkDirtyExternal();
+            events.LocaleRemoved += _ => MarkDirtyExternal();
+            events.LocaleSortOrderChanged += (_, __) => MarkDirtyExternal();
+
+            if (SessionState.GetBool(DirtyKey, false))
+                s_LastDirtyTime = EditorApplication.timeSinceStartup;
+
+            EditorApplication.update += Tick;
+            EditorApplication.delayCall += ShowWizardOnce;
         }
 
-        // Many events fire in bursts; coalesce them into one generation pass.
-        static void Schedule()
+        /// <summary>Marks the generated output as stale. Safe to call from asset postprocessors.</summary>
+        internal static void MarkDirtyExternal()
         {
-            if (s_Pending || !CodegenSettings.instance.SetupCompleted || !CodegenSettings.instance.AutoRegenerate)
+            SessionState.SetBool(DirtyKey, true);
+            s_LastDirtyTime = EditorApplication.timeSinceStartup;
+        }
+
+        static void Tick()
+        {
+            if (Application.isBatchMode)
                 return;
 
-            s_Pending = true;
-            EditorApplication.delayCall += () =>
+            if (s_StalenessCheckPending &&
+                !EditorApplication.isCompiling &&
+                !EditorApplication.isUpdating &&
+                !EditorApplication.isPlayingOrWillChangePlaymode)
             {
-                s_Pending = false;
-                if (EditorApplication.isCompiling || EditorApplication.isUpdating)
-                {
-                    Schedule();
+                s_StalenessCheckPending = false;
+                CheckStaleness();
+            }
+
+            if (!SessionState.GetBool(DirtyKey, false))
+                return;
+
+            if (EditorApplication.isCompiling ||
+                EditorApplication.isUpdating ||
+                EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+            if (EditorApplication.timeSinceStartup - s_LastDirtyTime < DebounceSeconds)
+                return;
+
+            var settings = CodegenSettings.instance;
+            if (!settings.SetupCompleted || !settings.AutoRegenerate)
+            {
+                SessionState.SetBool(DirtyKey, false);
+                return;
+            }
+
+            SessionState.SetBool(DirtyKey, false);
+            CodeGenerator.Run(new GenerateOptions { IsAutomatic = true });
+        }
+
+        static void CheckStaleness()
+        {
+            try
+            {
+                var settings = CodegenSettings.instance;
+                if (!settings.SetupCompleted || !settings.AutoRegenerate || string.IsNullOrEmpty(settings.LastModelHash))
                     return;
-                }
-                CodeGenerator.Generate();
-            };
+
+                var current = CodeGenerator.ComputeModelHash();
+                if (current != null && current != settings.LastModelHash)
+                    MarkDirtyExternal();
+            }
+            catch
+            {
+                // Tables may not be imported yet; the next editor event will mark us dirty again.
+            }
+        }
+
+        static void ShowWizardOnce()
+        {
+            if (Application.isBatchMode)
+                return;
+            if (CodegenSettings.instance.SetupCompleted)
+                return;
+            if (SessionState.GetBool(WizardShownKey, false))
+                return;
+
+            SessionState.SetBool(WizardShownKey, true);
+            SetupWizard.Open();
         }
     }
 }
