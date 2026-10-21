@@ -49,7 +49,18 @@ label.text = Ui.HelloWorld;
 
 ## Installation
 
-### OpenUPM (recommended)
+Pick **one** variant. Do not mix them: the UPM package and the `.unitypackage` variants both provide assemblies named `com.severnbli.localization-codegen.Runtime` / `.Editor`, so installing two of them causes duplicate assembly errors.
+
+| Variant | Updates | Dependencies | Version tracking |
+|---|---|---|---|
+| [OpenUPM](#option-1--openupm-recommended) | Package Manager | automatic | manifest + lock file |
+| [Signed tarball](#option-2--signed-tarball-tgz) | manual URL edit | automatic | manifest entry |
+| [Installer `.unitypackage`](#option-3--installer-unitypackage) | one-shot manifest edit | automatic | manifest + lock file |
+| [Standard `.unitypackage`](#option-4--standard-unitypackage-manual-versioning) | manual re-import | manual | **you** |
+
+The setup wizard opens after the first compilation in every case.
+
+### Option 1 – OpenUPM (recommended)
 
 The package is published on [OpenUPM](https://openupm.com/packages/com.severnbli.localization-codegen/) as `com.severnbli.localization-codegen`.
 
@@ -97,16 +108,51 @@ Then let Unity refresh the project. Replace the version with the latest one show
 
 </details>
 
+Package Manager resolves `com.unity.localization` for you and keeps the version in `Packages/packages-lock.json`.
+
+### Option 2 – Signed tarball (`.tgz`)
+
+Every release ships a signed UPM tarball, `tarball-com.severnbli.localization-codegen-<version>.tgz`, which is the same artifact OpenUPM consumes. Add it as a file dependency:
+
+```json
+{
+  "dependencies": {
+    "com.severnbli.localization-codegen": "https://github.com/Severnbli/localization-codegen/releases/download/<version>/tarball-com.severnbli.localization-codegen-<version>.tgz"
+  }
+}
+```
+
+Unity resolves the package's own dependencies from the tarball, so `com.unity.localization` is pulled in as usual. Packages installed from a URL are not updated automatically – editing the URL or version by hand is the update. It also works for offline machines: download the file once and reference it with a `file:` path. The `.attestation.p7m` signature inside the archive is what OpenUPM verifies; Unity itself does not.
+
+### Option 3 – Installer `.unitypackage`
+
+Download `installer-com.severnbli.localization-codegen-<version>.unitypackage` from the release and import it (**Assets > Import Package > Custom Package**). It contains only an editor script under `Assets/Editor/Localization Codegen Installer/`, which on the next domain reload:
+
+- registers the OpenUPM scoped registry in `Packages/manifest.json`, and
+- pins `com.severnbli.localization-codegen` to the installer's version.
+
+Package Manager then downloads and manages the real package, so dependencies resolve automatically and updates work as in Option 1. The installer never downgrades: it only writes the version when the installer's version is newer than the one already pinned.
+
+### Option 4 – Standard `.unitypackage` (manual versioning)
+
+Download `com.severnbli.localization-codegen-<version>.unitypackage` from the release and import it. Sources land in `Assets/Plugins/LocalizationCodegen/`. Committed `.meta` GUIDs are preserved, so script references survive a re-import and a later upgrade.
+
+This variant bypasses Package Manager, so **versioning is manual**:
+
+- No `package.json` is included, so Unity does not know which version is installed and Package Manager cannot list, update or uninstall it. Record the version yourself – keep the versioned release file or note it in your changelog.
+- To update, delete `Assets/Plugins/LocalizationCodegen/` and import the newer `.unitypackage`. There are no partial upgrades, and stale files are not cleaned up.
+- Install the `com.unity.localization` dependency yourself. Nothing resolves it for you.
+
 ## Requirements
 
 | Requirement | Version |
 |---|---|
 | Unity | 2021.3 or newer |
-| `com.unity.localization` | 1.5.x (installed automatically as a dependency) |
+| `com.unity.localization` | 1.5.x (automatic with the UPM variants, manual with the standard `.unitypackage`) |
 
 ## Usage
 
-Given a string table collection named `Ui` containing the key `HelloWorlf`, the generator produces `Ui.g.cs`:
+Given a string table collection named `Ui` containing the key `HelloWorld`, the generator produces `Ui.g.cs`:
 
 ```csharp
 namespace Localization
