@@ -5,8 +5,8 @@
 <h1>Localization Codegen</h1>
 
 <p>
-  <strong>Strongly typed C# access to your Unity Localization tables.</strong><br/>
-  Write code instead of hitting the localization database with magic strings.
+  <strong>Strongly typed C# access to your Unity Localization tables</strong><br/>
+  Write code instead of hitting the localization database with magic strings
 </p>
 
 <p>
@@ -40,9 +40,7 @@ label.text = localizationDatabase.GetLocalizedString("Ui", "HelloWorld");
 label.text = Ui.HelloWorld;
 ```
 
-## Features
-
-| | |
+| Feature | Description |
 |---|---|
 | 🪄 **First-run wizard** | A setup wizard opens automatically after the package is first imported |
 | 🧩 **Typed access** | One static class per string or asset table collection, one property per key |
