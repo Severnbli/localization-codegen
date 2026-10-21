@@ -8,12 +8,15 @@
     "keywords": [
         "Unity Localization",
         "Generation",
-		"Code Generation"
+        "Code Generation"
     ],
-    "version": "1.0.4",
+    "version": "1.1.0",
     "unity": "2021.3",
     "description": "C# classes and properties generator from Unity Localization tables",
+    "documentationUrl": "https://github.com/Severnbli/localization-codegen#readme",
+    "changelogUrl": "https://github.com/Severnbli/localization-codegen/blob/main/Unity-Package/Assets/root/CHANGELOG.md",
+    "licensesUrl": "https://github.com/Severnbli/localization-codegen/blob/main/Unity-Package/Assets/root/LICENSE",
     "dependencies": {
-		"com.unity.localization": "1.5.13"
-	}
+        "com.unity.localization": "1.5.13"
+    }
 }
