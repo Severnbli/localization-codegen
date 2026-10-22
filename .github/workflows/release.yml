@@ -354,37 +354,53 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build .unitypackage from the package folder
+        shell: bash
         run: |
           set -euo pipefail
 
-          # Folder the package lands in inside the user's project. This is only
-          # the "pathname" recorded in the .unitypackage; no source change needed.
+          # Folder the package lands in inside the user's project.
           install_dir="Assets/Plugins/LocalizationCodegen"
           out="$PWD/dist/${SUFFIX}.unitypackage"
           work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+
           mkdir -p "$PWD/dist"
 
           count=0
+
           while IFS= read -r -d '' meta; do
             item="${meta%.meta}"
             rel="${item#"$PACKAGE_DIR"/}"
 
-            # package.json is UPM-only metadata; it has no place under Assets/.
+            # package.json is UPM-only metadata.
             [ "$rel" = "package.json" ] && continue
-            # Orphaned .meta file without its asset.
+
+            # Ignore orphaned .meta files.
             [ -e "$item" ] || continue
 
-            guid="$(sed -n 's/^guid: *\([0-9a-f]\{32\}\).*/\1/p' "$meta" | head -n1)"
+            guid="$(sed -n 's/^guid: *\([0-9a-f]\{32\}\).*/\1/p' "$meta" | sed -n '1p')"
+
             if [ -z "$guid" ]; then
               echo "::error::No GUID found in $meta"
               exit 1
             fi
 
+            # Do not allow duplicate GUIDs to overwrite existing assets.
+            if [ -e "$work/$guid" ]; then
+              echo "::error::Duplicate GUID $guid found in $meta"
+              exit 1
+            fi
+
             mkdir -p "$work/$guid"
+
             cp "$meta" "$work/$guid/asset.meta"
             printf '%s' "$install_dir/$rel" > "$work/$guid/pathname"
-            # Folders have pathname + meta only.
-            [ -f "$item" ] && cp "$item" "$work/$guid/asset"
+
+            # Files get an asset; folders only need metadata and pathname.
+            if [ -f "$item" ]; then
+              cp "$item" "$work/$guid/asset"
+            fi
+
             count=$((count + 1))
           done < <(find "$PACKAGE_DIR" -mindepth 1 -name '*.meta' -print0)
 
@@ -393,12 +409,19 @@ jobs:
             exit 1
           fi
 
-          # Entries must be "<guid>/..." without a leading "./".
+          # Generate the Unity package archive.
           find "$work" -mindepth 1 -maxdepth 1 -printf '%P\n' | sort \
             | tar -czf "$out" -C "$work" -T -
 
           echo "Packed $count entries into $(basename "$out")"
-          tar -tzf "$out" | head -n 12
+
+          # Print a preview without triggering SIGPIPE.
+          tar -tzf "$out" | sed -n '1,12p'
+
+          # Validate gzip integrity.
+          gzip -t "$out"
+
+          echo "Unity package archive verified successfully."
 
       - name: Upload package unitypackage as artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
