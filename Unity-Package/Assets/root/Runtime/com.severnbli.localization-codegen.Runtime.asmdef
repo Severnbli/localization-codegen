@@ -1,7 +1,9 @@
 {
     "name": "com.severnbli.localization-codegen.Runtime",
     "references": [
-        "Unity.Localization"
+        "Unity.Localization",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

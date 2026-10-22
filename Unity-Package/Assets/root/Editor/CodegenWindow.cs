@@ -6,8 +6,7 @@ namespace Severnbli.LocalizationCodegen.Editor
     public sealed class CodegenWindow : EditorWindow
     {
         Vector2 scroll;
-        string statusMessage;
-        MessageType statusType = MessageType.Info;
+        bool showWarnings;
 
         [MenuItem("Window/Localization Codegen")]
         public static void Open() => GetWindow<CodegenWindow>("Localization Codegen");
@@ -35,17 +34,11 @@ namespace Severnbli.LocalizationCodegen.Editor
             EditorGUILayout.Space();
             if (GUILayout.Button("Regenerate Now", GUILayout.Height(28)))
             {
-                var changed = CodeGenerator.Generate();
-                if (changed < 0)
+                CodeGenerator.Run(new GenerateOptions
                 {
-                    statusMessage = "Output folder must be inside the Assets folder.";
-                    statusType = MessageType.Error;
-                }
-                else
-                {
-                    statusMessage = $"Generation complete — {changed} file(s) changed.";
-                    statusType = MessageType.Info;
-                }
+                    IsAutomatic = false,
+                    PromptOnMassDeletion = true
+                });
             }
 
             using (new EditorGUILayout.HorizontalScope())
@@ -56,22 +49,53 @@ namespace Severnbli.LocalizationCodegen.Editor
                     SetupWizard.Open();
             }
 
-            if (!string.IsNullOrEmpty(statusMessage))
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.HelpBox(statusMessage, statusType);
-            }
+            DrawLastResult();
 
             EditorGUILayout.EndScrollView();
         }
 
+        void DrawLastResult()
+        {
+            var result = CodeGenerator.LastResult;
+            if (result == null)
+                return;
+
+            EditorGUILayout.Space();
+            if (!result.Success)
+            {
+                EditorGUILayout.HelpBox(
+                    string.IsNullOrEmpty(result.Error) ? "Generation failed." : result.Error,
+                    MessageType.Error);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(
+                    $"Last run: {result.Total} table class file(s) — {result.Written} written, " +
+                    $"{result.Deleted} deleted, {result.Unchanged} unchanged.",
+                    MessageType.Info);
+            }
+
+            if (result.Warnings.Count == 0)
+                return;
+
+            showWarnings = EditorGUILayout.Foldout(showWarnings, $"Warnings ({result.Warnings.Count})", true);
+            if (!showWarnings)
+                return;
+
+            using (new EditorGUI.IndentLevelScope())
+            {
+                foreach (var warning in result.Warnings)
+                    EditorGUILayout.LabelField(warning, EditorStyles.wordWrappedLabel);
+            }
+        }
+
         static void OpenOutputFolder()
         {
-            var folder = (CodegenSettings.instance.OutputFolder ?? "").Trim();
-            if (string.IsNullOrEmpty(folder) || !folder.StartsWith("Assets"))
+            string folder;
+            string error;
+            if (!OutputPath.TryNormalize(CodegenSettings.instance.OutputFolder, out folder, out error))
             {
-                EditorUtility.DisplayDialog("Localization Codegen",
-                    "Output folder must be inside the Assets folder.", "OK");
+                EditorUtility.DisplayDialog("Localization Codegen", error, "OK");
                 return;
             }
 

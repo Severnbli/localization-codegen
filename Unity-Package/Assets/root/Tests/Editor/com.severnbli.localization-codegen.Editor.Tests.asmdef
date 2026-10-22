@@ -4,7 +4,9 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "com.severnbli.localization-codegen.Runtime",
-        "com.severnbli.localization-codegen.Editor"
+        "com.severnbli.localization-codegen.Editor",
+        "Unity.Localization",
+        "Unity.Localization.Editor"
     ],
     "includePlatforms": [
         "Editor"
@@ -16,7 +18,9 @@
         "nunit.framework.dll"
     ],
     "autoReferenced": false,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }
