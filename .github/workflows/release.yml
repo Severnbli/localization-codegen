@@ -140,7 +140,10 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ./Installer/Library
-          key: Library-Unity-Installer-${{ hashFiles('Installer/Packages/manifest.json', 'Installer/Packages/packages-lock.json') }}
+          # The Unity version must be part of the key: Library/ is not portable
+          # across editor versions, and restoring a foreign one forces a silent
+          # (and sometimes failing) project upgrade.
+          key: Library-Unity-Installer-${{ env.INSTALLER_UNITY_VERSION }}-${{ hashFiles('Installer/Packages/manifest.json', 'Installer/Packages/packages-lock.json') }}
 
       - name: Test Unity Installer (EditMode)
         uses: game-ci/unity-test-runner@32e57712352b500e17974b245a6dce9e11a73213 # v4
@@ -167,10 +170,17 @@ jobs:
 
       - name: Clean Unity artifacts and reset git state
         run: |
-          # Force remove Unity generated files with restricted permissions
-          sudo rm -rf ./Installer/Logs/ || true
-          sudo rm -rf ./Installer/Temp/ || true
-          sudo rm -rf ./artifacts-installer-editmode/ || true
+          set -euo pipefail
+          # The test container runs as root, so these directories are not
+          # removable by the runner user. `rm -rf` is idempotent, so a genuine
+          # failure here means the workspace is in an unexpected state and the
+          # build should not continue.
+          sudo rm -rf ./Installer/Logs/
+          sudo rm -rf ./Installer/Temp/
+          sudo rm -rf ./artifacts-installer-editmode/
+          # Drop stale export output too, so a failed export cannot be masked
+          # by a .unitypackage left over from an earlier run.
+          sudo rm -rf ./Installer/build/
 
           # Reset only tracked files to their committed state
           git reset --hard HEAD
@@ -191,6 +201,22 @@ jobs:
           buildMethod: Severnbli.LocalizationCodegen.Installer.PackageExporter.ExportPackage
           customParameters: -CI true -GITHUB_ACTIONS true
 
+      # GameCI runs Unity inside a Docker container as root, so everything the
+      # exporter writes under ./Installer/build is root-owned. The runner user
+      # cannot modify entries in that directory, which is why the later
+      # rename/move failed with EACCES. Hand only the generated output
+      # directory back to the runner - never the rest of the checkout.
+      - name: Take ownership of Unity build output
+        run: |
+          set -euo pipefail
+          package="./Installer/build/Localization-Codegen-Installer.unitypackage"
+          if [ ! -f "$package" ]; then
+            echo "::error::Expected Unity package was not produced: $package"
+            exit 1
+          fi
+          sudo chown -R "$(id -u):$(id -g)" ./Installer/build
+          ls -l ./Installer/build
+
       # (3) The exporter always writes Localization-Codegen-Installer.unitypackage;
       # rename it to the release naming scheme.
       - name: Rename installer to release asset name
@@ -198,14 +224,20 @@ jobs:
           SUFFIX: ${{ needs.check-version-tag.outputs.suffix }}
         run: |
           set -euo pipefail
-          mv ./Installer/build/Localization-Codegen-Installer.unitypackage \
-             "./Installer/build/installer-${SUFFIX}.unitypackage"
+          source_package="./Installer/build/Localization-Codegen-Installer.unitypackage"
+          target_package="./Installer/build/installer-${SUFFIX}.unitypackage"
+          if [ ! -f "$source_package" ]; then
+            echo "::error::Cannot rename installer: $source_package does not exist"
+            exit 1
+          fi
+          mv "$source_package" "$target_package"
 
       - name: Upload Unity Package as artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unity-installer-package
           path: ./Installer/build/installer-${{ needs.check-version-tag.outputs.suffix }}.unitypackage
+          if-no-files-found: error
           retention-days: 1
 
   # Builds the signed UPM package (.tgz with package/.attestation.p7m) in parallel
@@ -234,11 +266,13 @@ jobs:
       DIST_DIR: /tmp/signed-upm-dist
     steps:
       - name: Verify signing secrets are configured
+        shell: bash
         env:
           UPM_SERVICE_ACCOUNT_KEY_ID: ${{ secrets.UPM_SERVICE_ACCOUNT_KEY_ID }}
           UPM_SERVICE_ACCOUNT_KEY_SECRET: ${{ secrets.UPM_SERVICE_ACCOUNT_KEY_SECRET }}
           UPM_ORG_ID: ${{ secrets.UPM_ORG_ID }}
         run: |
+          set -euo pipefail
           missing=()
           [ -z "$UPM_SERVICE_ACCOUNT_KEY_ID" ]     && missing+=("UPM_SERVICE_ACCOUNT_KEY_ID")
           [ -z "$UPM_SERVICE_ACCOUNT_KEY_SECRET" ] && missing+=("UPM_SERVICE_ACCOUNT_KEY_SECRET")
@@ -254,6 +288,7 @@ jobs:
       - name: Read package metadata
         id: meta
         run: |
+          set -euo pipefail
           package_name="$(jq -r '.name' "$PACKAGE_DIR/package.json")"
           package_version="$(jq -r '.version' "$PACKAGE_DIR/package.json")"
 
@@ -290,10 +325,14 @@ jobs:
           upm pack "./$PACKAGE_DIR" --organization-id "$UPM_ORG_ID" --destination "$DIST_DIR"
 
       - name: Verify signed package contains attestation
+        shell: bash
         env:
           PACKAGE_NAME: ${{ steps.meta.outputs.package_name }}
           SUFFIX: ${{ needs.check-version-tag.outputs.suffix }}
         run: |
+          # Without errexit a failed attestation grep would be silently ignored
+          # and an unsigned/invalid archive could still be published.
+          set -euo pipefail
           shopt -s nullglob
           archives=("$DIST_DIR"/*.tgz "$DIST_DIR"/*.tar.gz)
           if [ "${#archives[@]}" -ne 1 ]; then
@@ -330,6 +369,7 @@ jobs:
         with:
           name: signed-upm-package
           path: /tmp/signed-upm-dist/*.tgz
+          if-no-files-found: error
           retention-days: 1
 
   # Builds a .unitypackage with the contents of the package, for people who
@@ -428,6 +468,7 @@ jobs:
         with:
           name: package-unitypackage
           path: dist/*.unitypackage
+          if-no-files-found: error
           retention-days: 1
 
   # --- UNITY TESTS ---
