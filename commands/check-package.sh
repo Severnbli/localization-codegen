@@ -36,7 +36,13 @@ for changelog in CHANGELOG.md "$package_dir/CHANGELOG.md"; do
   grep -q "^## \[$version\]" "$changelog" || fail "$changelog has no '## [$version]' entry"
 done
 
-# 3. Every package asset needs a committed .meta file and every .meta file needs
+# 3. The package ships its own copies of the README and changelog (Package
+#    Manager shows them); they must not drift from the repository root.
+for doc in README.md CHANGELOG.md; do
+  cmp -s "$doc" "$package_dir/$doc" || fail "$package_dir/$doc differs from $doc (copy the root file over it)"
+done
+
+# 4. Every package asset needs a committed .meta file and every .meta file needs
 #    its asset. A missing .meta silently drops the file from the .unitypackage
 #    and gives it a new GUID on every import. Unity ignores hidden entries and
 #    folders ending with '~', so they are skipped.
@@ -60,7 +66,7 @@ while IFS= read -r orphan; do
   [ -n "$orphan" ] && fail "Orphaned .meta without an asset: $package_dir/$orphan.meta"
 done < <(comm -13 <(echo "$assets") <(echo "$metas"))
 
-# 4. GUIDs must be unique, or Unity reassigns one of them on import.
+# 5. GUIDs must be unique, or Unity reassigns one of them on import.
 duplicates="$(git ls-files -z -- "$package_dir/*.meta" |
   xargs -0 sed -n 's/^guid: *\([0-9a-f]\{32\}\).*/\1/p' | sort | uniq -d)"
 [ -z "$duplicates" ] || fail "Duplicate GUIDs in $package_dir: $duplicates"
