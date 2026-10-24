@@ -22,7 +22,8 @@ namespace Severnbli.LocalizationCodegen
     {
         static bool s_WarnedMissingSettings;
 
-        static bool HasSettings()
+        /// <summary>True when Localization is configured; logs one warning the first time it is not.</summary>
+        internal static bool HasSettings()
         {
             if (LocalizationSettings.HasSettings)
                 return true;
@@ -149,7 +150,7 @@ namespace Severnbli.LocalizationCodegen
         }
 
         /// <summary>Wraps any value as a smart string local variable.</summary>
-        sealed class ObjectValueVariable : IVariable
+        internal sealed class ObjectValueVariable : IVariable
         {
             readonly object m_Value;
 

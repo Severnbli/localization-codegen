@@ -97,6 +97,9 @@ namespace Severnbli.LocalizationCodegen.Editor
             try
             {
                 var emitOptions = BuildEmitOptions(settings);
+                if (settings.GenerateUniTask && !emitOptions.UniTask)
+                    result.Warnings.Add(UniTaskSupport.MissingMessage);
+
                 var reader = new TableReader(emitOptions);
                 var read = reader.Read(settings.GenerateStringTables, settings.GenerateAssetTables);
                 result.Warnings.AddRange(read.Warnings);
@@ -284,7 +287,9 @@ namespace Severnbli.LocalizationCodegen.Editor
                 Naming = settings.Naming,
                 KeySeparators = settings.KeySeparators,
                 SmartParamTypes = settings.SmartParamTypes,
-                GenerateAsmdef = settings.GenerateAsmdef
+                GenerateAsmdef = settings.GenerateAsmdef,
+                // Generated code must compile, so the option only takes effect when the add-on is compiled.
+                UniTask = settings.GenerateUniTask && UniTaskSupport.IsAvailable
             };
         }
 
@@ -466,7 +471,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             return fullPath;
         }
 
-        static string BuildAsmdefContent(EmitOptions options, List<TableModel> models, out string baseName)
+        internal static string BuildAsmdefContent(EmitOptions options, List<TableModel> models, out string baseName)
         {
             baseName = string.IsNullOrEmpty(options.Namespace)
                 ? "LocalizationCodegen.Generated"
@@ -477,6 +482,12 @@ namespace Severnbli.LocalizationCodegen.Editor
                 "com.severnbli.localization-codegen.Runtime",
                 "Unity.Localization"
             };
+
+            if (options.UniTask)
+            {
+                references.Add(UniTaskSupport.RuntimeAssemblyName);
+                references.Add(UniTaskSupport.UniTaskAssemblyName);
+            }
 
             foreach (var model in models)
                 foreach (var assembly in model.AssetAssemblies)

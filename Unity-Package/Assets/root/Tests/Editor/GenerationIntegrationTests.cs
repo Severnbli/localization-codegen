@@ -26,6 +26,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
         bool m_GenerateAssetTables;
         bool m_UseRuntimeAlias;
         SmartStringMode m_SmartStrings;
+        bool m_GenerateUniTask;
         string m_LastOutputFolder;
         string[] m_GeneratedPaths;
         string[] m_CollectionHashes;
@@ -44,6 +45,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_GenerateAssetTables = m_Settings.GenerateAssetTables;
             m_UseRuntimeAlias = m_Settings.UseRuntimeAlias;
             m_SmartStrings = m_Settings.SmartStrings;
+            m_GenerateUniTask = m_Settings.GenerateUniTask;
             m_LastOutputFolder = m_Settings.LastOutputFolder;
             m_GeneratedPaths = m_Settings.GeneratedPaths;
             m_CollectionHashes = m_Settings.CollectionHashes;
@@ -67,6 +69,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_Settings.GenerateAssetTables = false;
             m_Settings.UseRuntimeAlias = false;
             m_Settings.SmartStrings = SmartStringMode.Off;
+            m_Settings.GenerateUniTask = false;
             m_Settings.Namespace = "CodegenIntegrationTests";
             m_Settings.OutputFolder = TestRoot + "/OutA";
             m_Settings.CollectionHashes = new string[0];
@@ -84,6 +87,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_Settings.GenerateAssetTables = m_GenerateAssetTables;
             m_Settings.UseRuntimeAlias = m_UseRuntimeAlias;
             m_Settings.SmartStrings = m_SmartStrings;
+            m_Settings.GenerateUniTask = m_GenerateUniTask;
             m_Settings.LastOutputFolder = m_LastOutputFolder;
             m_Settings.GeneratedPaths = m_GeneratedPaths;
             m_Settings.CollectionHashes = m_CollectionHashes;
@@ -169,6 +173,27 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
 
             CollectionAssert.IsEmpty(
                 System.Array.FindAll(m_Settings.CollectionHashes, h => h.StartsWith("S|RemovedCollection|")));
+        }
+
+        [Test]
+        public void UniTaskOption_EmitsAsyncMembersOnlyWhenTheAddOnIsCompiled()
+        {
+            m_Settings.GenerateUniTask = true;
+            var run = CodeGenerator.Run(new GenerateOptions { PromptOnMassDeletion = false, AllowInBatchMode = true });
+            Assert.IsTrue(run.Success, run.Error);
+
+            var output = File.ReadAllText(TestRoot + "/OutA/CodegenIntegration.g.cs");
+            if (UniTaskSupport.IsAvailable)
+            {
+                StringAssert.Contains("GreetingAsync(", output);
+                CollectionAssert.DoesNotContain(run.Warnings, UniTaskSupport.MissingMessage);
+            }
+            else
+            {
+                // Code that references UniTask would not compile, so the option is skipped with a warning.
+                StringAssert.DoesNotContain("UniTask", output);
+                CollectionAssert.Contains(run.Warnings, UniTaskSupport.MissingMessage);
+            }
         }
 
         [Test]
