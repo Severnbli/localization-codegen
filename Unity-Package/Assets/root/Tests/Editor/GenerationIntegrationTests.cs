@@ -1,6 +1,8 @@
 using System.IO;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.AddressableAssets;
+using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.Localization;
 
 namespace Severnbli.LocalizationCodegen.Editor.Tests
@@ -50,6 +52,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             if (AssetDatabase.IsValidFolder(TestRoot))
                 AssetDatabase.DeleteAsset(TestRoot);
 
+            EnsureAddressableSettings();
             m_Collection = LocalizationEditorSettings.CreateStringTableCollection(
                 "CodegenIntegration",
                 TestRoot,
@@ -90,6 +93,25 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             if (AssetDatabase.IsValidFolder(TestRoot))
                 AssetDatabase.DeleteAsset(TestRoot);
             AssetDatabase.Refresh();
+        }
+
+        /// <summary>
+        /// Creating a table collection lazily creates the Addressables settings. On Unity 6 (Addressables 2.x)
+        /// that fails in a fresh project: the settings folder is created with Directory.CreateDirectory, so
+        /// AssetDatabase.CreateAsset cannot place the asset there and Addressables dereferences null. Creating the
+        /// folder through the AssetDatabase first avoids it.
+        /// </summary>
+        static void EnsureAddressableSettings()
+        {
+            if (AddressableAssetSettingsDefaultObject.SettingsExists)
+                return;
+
+            var folder = AddressableAssetSettingsDefaultObject.kDefaultConfigFolder;
+            if (!AssetDatabase.IsValidFolder(folder))
+                AssetDatabase.CreateFolder("Assets", Path.GetFileName(folder));
+
+            AddressableAssetSettingsDefaultObject.Settings = AddressableAssetSettings.Create(
+                folder, AddressableAssetSettingsDefaultObject.kDefaultConfigAssetName, true, true);
         }
 
         [Test]
