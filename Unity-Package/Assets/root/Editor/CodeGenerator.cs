@@ -99,6 +99,8 @@ namespace Severnbli.LocalizationCodegen.Editor
                 var emitOptions = BuildEmitOptions(settings);
                 if (settings.GenerateUniTask && !emitOptions.UniTask)
                     result.Warnings.Add(UniTaskSupport.MissingMessage);
+                if (!settings.GenerateAsmdef)
+                    WarnAboutOwningAssembly(folder, emitOptions, settings, result);
 
                 var reader = new TableReader(emitOptions);
                 var read = reader.Read(settings.GenerateStringTables, settings.GenerateAssetTables);
@@ -291,6 +293,28 @@ namespace Severnbli.LocalizationCodegen.Editor
                 // Generated code must compile, so the option only takes effect when the add-on is compiled.
                 UniTask = settings.GenerateUniTask && UniTaskSupport.IsAvailable
             };
+        }
+
+        /// <summary>Warns when the output folder compiles into an asmdef that lacks the references the code needs.</summary>
+        static void WarnAboutOwningAssembly(string folder, EmitOptions options, CodegenSettings settings, GenerateResult result)
+        {
+            try
+            {
+                var owner = AssemblyOwnership.Find(
+                    folder, AssemblyOwnership.RequiredReferences(options.UniTask), settings.LastAsmdefPath);
+                if (owner == null || owner.MissingReferences.Count == 0)
+                    return;
+
+                result.Warnings.Add(
+                    $"The output folder belongs to the assembly '{owner.Name}', which does not reference " +
+                    string.Join(", ", owner.MissingReferences.ToArray()) + ". The generated code will not compile " +
+                    "until you add them (Project Settings > Localization Codegen) or enable Generate .asmdef.");
+            }
+            catch (Exception e)
+            {
+                // A broken asmdef must not stop generation; Unity reports it on its own.
+                result.Warnings.Add("Could not inspect the assembly that owns the output folder: " + e.Message);
+            }
         }
 
         static bool HasPreviousOutput(CodegenSettings settings, string currentFolderFull)

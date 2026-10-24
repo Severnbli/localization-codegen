@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -147,7 +148,10 @@ namespace Severnbli.LocalizationCodegen.Editor
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                var previous = s.OutputFolder;
                 s.OutputFolder = EditorGUILayout.DelayedTextField(Content.OutputFolder, s.OutputFolder);
+                if (s.OutputFolder != previous)
+                    OnOutputFolderChanged();
                 if (GUILayout.Button(Content.Browse, EditorStyles.miniButton, GUILayout.Width(70)))
                     PickOutputFolder(s);
             }
@@ -165,6 +169,135 @@ namespace Severnbli.LocalizationCodegen.Editor
                     "assembly and will not be available in player builds.",
                     MessageType.Warning);
             }
+            else
+            {
+                DrawOwningAssembly(s, folder);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+        // Owning assembly definition
+        // ---------------------------------------------------------------------------------------------------
+
+        static string s_OwnerCacheKey;
+        static OwningAssembly s_OwnerCache;
+        static bool s_ProjectChangeHooked;
+
+        /// <summary>The owning assembly of the configured folder, cached until the project or settings change.</summary>
+        static OwningAssembly CurrentOwner(CodegenSettings s, string folder)
+        {
+            if (!s_ProjectChangeHooked)
+            {
+                s_ProjectChangeHooked = true;
+                EditorApplication.projectChanged += () => s_OwnerCacheKey = null;
+            }
+
+            var required = AssemblyOwnership.RequiredReferences(s);
+            var key = folder + "|" + s.GenerateAsmdef + "|" + s.LastAsmdefPath + "|" + string.Join(",", required);
+            if (key != s_OwnerCacheKey)
+            {
+                s_OwnerCacheKey = key;
+                s_OwnerCache = s.GenerateAsmdef ? null : AssemblyOwnership.Find(folder, required, s.LastAsmdefPath);
+            }
+            return s_OwnerCache;
+        }
+
+        static void DrawOwningAssembly(CodegenSettings s, string folder)
+        {
+            var owner = CurrentOwner(s, folder);
+            if (owner == null)
+                return;
+
+            if (owner.MissingReferences.Count == 0)
+            {
+                EditorGUILayout.HelpBox($"Generated code compiles into the assembly '{owner.Name}'.", MessageType.Info);
+                return;
+            }
+
+            EditorGUILayout.HelpBox(OwnerProblem(owner), MessageType.Warning);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                using (new EditorGUI.DisabledScope(!owner.IsEditable))
+                {
+                    if (GUILayout.Button("Add References", EditorStyles.miniButtonLeft))
+                        ApplyOwnerChoice(s, owner, addReferences: true);
+                }
+                if (GUILayout.Button("Use Separate .asmdef", EditorStyles.miniButtonRight))
+                    ApplyOwnerChoice(s, owner, addReferences: false);
+            }
+        }
+
+        static string OwnerProblem(OwningAssembly owner)
+        {
+            var location = owner.AsmdefPath ?? "an unknown assembly definition";
+            var via = owner.AsmrefPath != null ? $" through '{owner.AsmrefPath}'" : "";
+            var text = $"The output folder belongs to the assembly '{owner.Name}' ({location}){via}. Generated code " +
+                       "compiles into it, but it does not reference:\n- " +
+                       string.Join("\n- ", owner.MissingReferences.ToArray());
+            if (!owner.IsEditable)
+                text += "\n\nThat assembly definition is read-only, so use a separate .asmdef or another folder.";
+            return text;
+        }
+
+        static void OnOutputFolderChanged()
+        {
+            // Dialogs cannot open in the middle of an IMGUI layout pass.
+            if (!Application.isBatchMode)
+                EditorApplication.delayCall += PromptForOwningAssembly;
+        }
+
+        /// <summary>Asks how to make the generated code compile when the folder lies below another asmdef.</summary>
+        internal static void PromptForOwningAssembly()
+        {
+            var s = CodegenSettings.instance;
+            string folder;
+            string error;
+            if (s.GenerateAsmdef || !OutputPath.TryNormalize(s.OutputFolder, out folder, out error))
+                return;
+
+            var owner = AssemblyOwnership.Find(folder, AssemblyOwnership.RequiredReferences(s), s.LastAsmdefPath);
+            if (owner == null || owner.MissingReferences.Count == 0)
+                return;
+
+            if (!owner.IsEditable)
+            {
+                if (EditorUtility.DisplayDialog("Localization Codegen", OwnerProblem(owner),
+                        "Use Separate .asmdef", "Not Now"))
+                    ApplyOwnerChoice(s, owner, addReferences: false);
+                return;
+            }
+
+            var choice = EditorUtility.DisplayDialogComplex(
+                "Localization Codegen",
+                OwnerProblem(owner) + $"\n\nAdd the missing references to {Path.GetFileName(owner.AsmdefPath)}, " +
+                "or give the generated code its own .asmdef?",
+                "Add References",
+                "Not Now",
+                "Use Separate .asmdef");
+
+            if (choice == 0)
+                ApplyOwnerChoice(s, owner, addReferences: true);
+            else if (choice == 2)
+                ApplyOwnerChoice(s, owner, addReferences: false);
+        }
+
+        static void ApplyOwnerChoice(CodegenSettings s, OwningAssembly owner, bool addReferences)
+        {
+            if (addReferences)
+            {
+                if (AssemblyOwnership.AddMissingReferences(owner))
+                    Debug.Log($"[Localization Codegen] Added {string.Join(", ", owner.MissingReferences.ToArray())} " +
+                              $"to {owner.AsmdefPath}.");
+            }
+            else
+            {
+                s.GenerateAsmdef = true;
+                s.SaveSettings();
+                CodegenHooks.MarkDirtyExternal();
+            }
+
+            s_OwnerCacheKey = null;
         }
 
         static void DrawTables(CodegenSettings s)
@@ -248,6 +381,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             {
                 s.SaveSettings();
                 CodegenHooks.MarkDirtyExternal();
+                OnOutputFolderChanged();
             }
 
             GUI.FocusControl(null);
