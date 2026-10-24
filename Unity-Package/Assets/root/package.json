@@ -10,7 +10,7 @@
         "Generation",
         "Code Generation"
     ],
-    "version": "1.1.0",
+    "version": "1.1.1",
     "unity": "2021.3",
     "description": "C# classes and properties generator from Unity Localization tables",
     "documentationUrl": "https://github.com/Severnbli/localization-codegen/blob/main/README.md",

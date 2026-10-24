@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.1] - 2026-10-24
+
+### Fixed
+- `Verify (Dry run)` and `CheckBatch` compare the generated code on disk with the tables, so a
+  hand-edited generated file is reported as out of date.
+- Generated files stay tracked for cleanup when a run skips cleanup (a collection failed to read or
+  no tables were found), and hashes of removed collections are no longer kept forever.
+- XML documentation is truncated before escaping, so an entity such as `&amp;` is never cut in half.
+- `Ref` members avoid inherited `object` member names, like the table class members.
+- The installer registers the package's own OpenUPM scope (it registered unrelated template scopes,
+  so the package could not be resolved) and installs the current package version.
+
 ## [1.1.0] - 2026-10-21
 
 ### Added
