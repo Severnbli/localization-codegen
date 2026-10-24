@@ -1,0 +1,26 @@
+{
+    "name": "com.severnbli.localization-codegen.UniTask",
+    "references": [
+        "com.severnbli.localization-codegen.Runtime",
+        "Unity.Localization",
+        "Unity.ResourceManager",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "LOCALIZATION_CODEGEN_UNITASK"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "2.0.0",
+            "define": "LOCALIZATION_CODEGEN_UNITASK"
+        }
+    ],
+    "noEngineReferences": false
+}
