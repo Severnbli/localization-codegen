@@ -105,7 +105,10 @@ namespace Severnbli.LocalizationCodegen.Editor
                 CodeEmitter.AssignClassNames(read.Models, emitOptions);
 
                 var storedHashes = ParseHashes(settings.CollectionHashes);
-                var newHashes = new Dictionary<string, string>(storedHashes, StringComparer.Ordinal);
+                // Keep the hashes of collections that failed to read, so they are not treated as removed.
+                var newHashes = read.Failed == 0
+                    ? new Dictionary<string, string>(StringComparer.Ordinal)
+                    : new Dictionary<string, string>(storedHashes, StringComparer.Ordinal);
                 var files = new List<GeneratedFile>();
                 var writtenFullPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var folderFull = OutputPath.ToFullPath(folder);
@@ -125,10 +128,11 @@ namespace Severnbli.LocalizationCodegen.Editor
                         Hash = hash
                     };
 
-                    var unchangedOnDisk = false;
+                    // A dry run always compares real content, so a hand-edited file is reported as out of date.
                     string stored;
-                    if (storedHashes.TryGetValue(key, out stored) && stored == hash && File.Exists(fullPath))
-                        unchangedOnDisk = true;
+                    var unchangedOnDisk = !options.DryRun &&
+                                          storedHashes.TryGetValue(key, out stored) && stored == hash &&
+                                          File.Exists(fullPath);
 
                     if (unchangedOnDisk)
                     {
@@ -189,7 +193,9 @@ namespace Severnbli.LocalizationCodegen.Editor
                             OutputPath.NormalizeNewLines(asmdefContent))
                             result.Written++;
                     }
-                    else if (!string.IsNullOrEmpty(settings.LastAsmdefPath) && File.Exists(settings.LastAsmdefPath))
+                    else if (allowCleanup &&
+                             !string.IsNullOrEmpty(settings.LastAsmdefPath) &&
+                             File.Exists(settings.LastAsmdefPath))
                     {
                         result.Deleted++;
                     }
@@ -226,9 +232,15 @@ namespace Severnbli.LocalizationCodegen.Editor
                         if (allowCleanup)
                             Cleanup(settings, folderFull, writtenFullPaths, asmdefFull, result);
 
+                        // When cleanup was skipped, keep tracking the old files so a later run can still remove them.
+                        var trackedPaths = writtenFullPaths.Select(OutputPath.ToAssetPath);
+                        if (!allowCleanup)
+                            trackedPaths = trackedPaths.Concat(settings.GeneratedPaths
+                                .Where(p => !string.IsNullOrEmpty(p) && File.Exists(p)));
+
                         settings.LastOutputFolder = folder;
-                        settings.GeneratedPaths = writtenFullPaths
-                            .Select(OutputPath.ToAssetPath)
+                        settings.GeneratedPaths = trackedPaths
+                            .Distinct(StringComparer.Ordinal)
                             .OrderBy(p => p, StringComparer.Ordinal)
                             .ToArray();
                         settings.CollectionHashes = newHashes

@@ -211,10 +211,26 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
         }
 
         [Test]
+        public void XmlDocs_TruncationNeverSplitsAnEscapedEntity()
+        {
+            var model = new TableModel { Name = "Ui" };
+            model.Entries.Add(new EntryModel { Id = 1, Key = "Title", Preview = new string('a', 119) + "&&&" });
+
+            var options = new EmitOptions { Namespace = "Localization", UseRuntimeAlias = true, XmlDocs = true };
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains("/// <summary>" + new string('a', 119) + "&amp;...</summary>", output);
+            Assert.IsFalse(
+                System.Text.RegularExpressions.Regex.IsMatch(output, "&(?!amp;|lt;|gt;|quot;|apos;)"),
+                "Every '&' in the doc comment must start a complete XML entity.");
+        }
+
+        [Test]
         public void SmartString_EmitsMethodWithPositionalParameters()
         {
             var model = new TableModel { Name = "Ui" };
-            var entry = new EntryModel { Id = 1, Key = "Greeting", IsSmart = true };
+            var entry = new EntryModel { Id = 1, Key = "Greeting" };
             entry.Params.Add(new SmartParam
             {
                 IsPositional = true,
@@ -246,7 +262,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
         public void SmartString_NamedOnlyUsesDictionary()
         {
             var model = new TableModel { Name = "Ui" };
-            var entry = new EntryModel { Id = 1, Key = "Greeting", IsSmart = true };
+            var entry = new EntryModel { Id = 1, Key = "Greeting" };
             entry.Params.Add(new SmartParam
             {
                 IsPositional = false,
@@ -275,7 +291,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
         public void SmartString_MixedUsesGetStringMixed()
         {
             var model = new TableModel { Name = "Ui" };
-            var entry = new EntryModel { Id = 1, Key = "Greeting", IsSmart = true };
+            var entry = new EntryModel { Id = 1, Key = "Greeting" };
             entry.Params.Add(new SmartParam { IsPositional = true, Index = 0, SourceName = "0", ClrName = "arg0", TypeName = "object" });
             entry.Params.Add(new SmartParam { IsPositional = false, SourceName = "count", ClrName = "count", TypeName = "int" });
             model.Entries.Add(entry);
@@ -319,6 +335,19 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
                 "public static global::UnityEngine.Localization.LocalizedSprite Sprite => " +
                 "new global::UnityEngine.Localization.LocalizedSprite(TableName, \"Sprite\");",
                 output);
+        }
+
+        [Test]
+        public void Refs_AvoidObjectMembers()
+        {
+            var model = Model("Ui", false, (1L, "ToString"));
+            var options = new EmitOptions { Namespace = "Localization", UseRuntimeAlias = true, Refs = true };
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            var refClass = output.Substring(output.IndexOf("public static class Ref", StringComparison.Ordinal));
+            StringAssert.Contains("LocalizedString ToString_2 =>", refClass);
+            StringAssert.DoesNotContain("LocalizedString ToString =>", refClass);
         }
 
         [Test]

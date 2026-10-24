@@ -23,6 +23,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
         bool m_GenerateStringTables;
         bool m_GenerateAssetTables;
         bool m_UseRuntimeAlias;
+        SmartStringMode m_SmartStrings;
         string m_LastOutputFolder;
         string[] m_GeneratedPaths;
         string[] m_CollectionHashes;
@@ -40,6 +41,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_GenerateStringTables = m_Settings.GenerateStringTables;
             m_GenerateAssetTables = m_Settings.GenerateAssetTables;
             m_UseRuntimeAlias = m_Settings.UseRuntimeAlias;
+            m_SmartStrings = m_Settings.SmartStrings;
             m_LastOutputFolder = m_Settings.LastOutputFolder;
             m_GeneratedPaths = m_Settings.GeneratedPaths;
             m_CollectionHashes = m_Settings.CollectionHashes;
@@ -78,6 +80,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_Settings.GenerateStringTables = m_GenerateStringTables;
             m_Settings.GenerateAssetTables = m_GenerateAssetTables;
             m_Settings.UseRuntimeAlias = m_UseRuntimeAlias;
+            m_Settings.SmartStrings = m_SmartStrings;
             m_Settings.LastOutputFolder = m_LastOutputFolder;
             m_Settings.GeneratedPaths = m_GeneratedPaths;
             m_Settings.CollectionHashes = m_CollectionHashes;
@@ -105,6 +108,45 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
 
             Assert.IsFalse(File.Exists(oldFile), "Files from the previous output folder must be removed.");
             Assert.IsTrue(File.Exists(TestRoot + "/OutB/CodegenIntegration.g.cs"));
+        }
+
+        [Test]
+        public void DryRun_ReportsHandEditedFile_EvenWhenTablesAreUnchanged()
+        {
+            var firstRun = CodeGenerator.Run(new GenerateOptions { PromptOnMassDeletion = false, AllowInBatchMode = true });
+            Assert.IsTrue(firstRun.Success, firstRun.Error);
+
+            var check = CodeGenerator.Run(new GenerateOptions
+            {
+                DryRun = true, PromptOnMassDeletion = false, AllowInBatchMode = true
+            });
+            Assert.IsTrue(check.Success, check.Error);
+            Assert.IsFalse(check.WouldChange, "Freshly generated code must be reported as up to date.");
+
+            var path = TestRoot + "/OutA/CodegenIntegration.g.cs";
+            File.AppendAllText(path, "// edited by hand\n");
+
+            check = CodeGenerator.Run(new GenerateOptions
+            {
+                DryRun = true, PromptOnMassDeletion = false, AllowInBatchMode = true
+            });
+            Assert.IsTrue(check.Success, check.Error);
+            Assert.IsTrue(check.WouldChange, "A hand-edited generated file must be reported as out of date.");
+            Assert.AreEqual(1, check.Written);
+        }
+
+        [Test]
+        public void RemovedCollection_DropsItsStoredHash()
+        {
+            var firstRun = CodeGenerator.Run(new GenerateOptions { PromptOnMassDeletion = false, AllowInBatchMode = true });
+            Assert.IsTrue(firstRun.Success, firstRun.Error);
+
+            m_Settings.CollectionHashes = new[] { "S|RemovedCollection|0123456789abcdef" };
+            var secondRun = CodeGenerator.Run(new GenerateOptions { PromptOnMassDeletion = false, AllowInBatchMode = true });
+            Assert.IsTrue(secondRun.Success, secondRun.Error);
+
+            CollectionAssert.IsEmpty(
+                System.Array.FindAll(m_Settings.CollectionHashes, h => h.StartsWith("S|RemovedCollection|")));
         }
 
         [Test]

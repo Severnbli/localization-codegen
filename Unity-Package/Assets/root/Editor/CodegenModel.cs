@@ -33,7 +33,6 @@ namespace Severnbli.LocalizationCodegen.Editor
         public bool IsAsset;
         public readonly List<EntryModel> Entries = new List<EntryModel>();
         public readonly HashSet<string> AssetAssemblies = new HashSet<string>(StringComparer.Ordinal);
-        public readonly List<string> Warnings = new List<string>();
     }
 
     /// <summary>One table entry reduced to the information the emitter needs.</summary>
@@ -43,7 +42,6 @@ namespace Severnbli.LocalizationCodegen.Editor
         public string Key;
         public string AssetTypeName;
         public string Preview;
-        public bool IsSmart;
         public readonly List<SmartParam> Params = new List<SmartParam>();
         public readonly List<SmartVariableUsage> Usages = new List<SmartVariableUsage>();
     }
