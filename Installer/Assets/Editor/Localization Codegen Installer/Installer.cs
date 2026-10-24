@@ -16,7 +16,7 @@ namespace Severnbli.LocalizationCodegen.Installer
     public static partial class Installer
     {
         public const string PackageId = "com.severnbli.localization-codegen";
-        public const string Version = "1.2.0";
+        public const string Version = "1.2.1";
 
         static Installer()
         {
