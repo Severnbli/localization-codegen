@@ -31,7 +31,7 @@ The signing step is implemented as the `build-signed-upm-package` job in
 manually triggered release, packs the package at
 `Unity-Package/Assets/root/` with Unity's UPM CLI, verifies the resulting archive
 contains `package/.attestation.p7m` and that its basename begins with
-`YOUR_PACKAGE_ID-`, and uploads the signed `.tgz` as a `signed-upm-package`
+`YOUR_PACKAGE_ID-`, and uploads the signed `.tgz` as a `release-upm-tarball`
 workflow artifact.
 
 The artifact is then consumed by the atomic publish step in `release-unity-plugin`,
