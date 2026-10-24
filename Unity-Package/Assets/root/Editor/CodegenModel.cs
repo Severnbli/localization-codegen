@@ -74,6 +74,7 @@ namespace Severnbli.LocalizationCodegen.Editor
     {
         public const string DefaultRuntimeAlias = "__LT";
         public const string RuntimeTypeName = "global::Severnbli.LocalizationCodegen.LocalizedTables";
+        public const string UniTaskRuntimeTypeName = "global::Severnbli.LocalizationCodegen.LocalizedTablesUniTask";
 
         /// <summary>Normalized namespace, or <see langword="null"/> for the global namespace.</summary>
         public string Namespace;
@@ -90,10 +91,14 @@ namespace Severnbli.LocalizationCodegen.Editor
         /// <summary>When true, an asmdef is generated and unreferenced player assemblies may be used.</summary>
         public bool GenerateAsmdef;
 
+        /// <summary>When true, every member also gets a UniTask-returning <c>...Async</c> variant.</summary>
+        public bool UniTask;
+
         /// <summary>Stable signature of every option that can change output.</summary>
         public string Signature()
         {
-            return string.Join("|", new[]
+            // UniTask is appended only when enabled, so existing hashes (and files) stay valid after upgrading.
+            return (UniTask ? "unitask|" : "") + string.Join("|", new[]
             {
                 Namespace ?? "<global>",
                 UseRuntimeAlias ? "alias" : "noalias",

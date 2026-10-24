@@ -38,6 +38,9 @@ namespace Severnbli.LocalizationCodegen.Editor
         [SerializeField] private bool generateAsmdef;
         [SerializeField] private bool failOnSmartStringMismatch;
 
+        // Options introduced in 1.2.0. Off by default, so no migration is needed.
+        [SerializeField] private bool generateUniTask;
+
         public bool SetupCompleted { get => setupCompleted; set => setupCompleted = value; }
         public string OutputFolder { get => outputFolder; set => outputFolder = value; }
         public string Namespace { get => generatedNamespace; set => generatedNamespace = value; }
@@ -56,6 +59,7 @@ namespace Severnbli.LocalizationCodegen.Editor
         public bool GenerateXmlDocs { get => generateXmlDocs; set => generateXmlDocs = value; }
         public bool GenerateAsmdef { get => generateAsmdef; set => generateAsmdef = value; }
         public bool FailOnSmartStringMismatch { get => failOnSmartStringMismatch; set => failOnSmartStringMismatch = value; }
+        public bool GenerateUniTask { get => generateUniTask; set => generateUniTask = value; }
 
         public SmartStringMode SmartStrings
         {

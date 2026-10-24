@@ -97,6 +97,12 @@ namespace Severnbli.LocalizationCodegen.Editor
                 new GUIContent("Key Separators",
                     "Optional characters that create nested classes, e.g. '/' makes 'Menu/Start' become Menu.Start."),
                 s.KeySeparators);
+            s.GenerateUniTask = EditorGUILayout.Toggle(
+                new GUIContent("UniTask Members",
+                    "Also emit ...Async members that return UniTask and accept a CancellationToken. Requires UniTask (com.cysharp.unitask)."),
+                s.GenerateUniTask);
+            if (s.GenerateUniTask && !UniTaskSupport.IsAvailable)
+                EditorGUILayout.HelpBox(UniTaskSupport.MissingMessage, MessageType.Warning);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Advanced", EditorStyles.boldLabel);

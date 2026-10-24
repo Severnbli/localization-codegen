@@ -14,6 +14,9 @@ namespace Severnbli.LocalizationCodegen.Editor
         const string AssetObject = "global::UnityEngine.Object";
         const string LocalizedStringType = "global::UnityEngine.Localization.LocalizedString";
         const string LocalizedAssetType = "global::UnityEngine.Localization.LocalizedAsset";
+        const string UniTaskType = "global::Cysharp.Threading.Tasks.UniTask";
+        const string CancellationTokenType = "global::System.Threading.CancellationToken";
+        const string CancellationTokenName = "cancellationToken";
 
         /// <summary>Assigns deterministic, collision-free class names to every model.</summary>
         public static void AssignClassNames(IList<TableModel> models, EmitOptions options)
@@ -116,6 +119,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             public readonly List<EntryModel> Entries = new List<EntryModel>();
             public readonly Dictionary<EntryModel, string> RawMemberNames = new Dictionary<EntryModel, string>();
             public readonly Dictionary<EntryModel, string> MemberNames = new Dictionary<EntryModel, string>();
+            public readonly Dictionary<EntryModel, string> AsyncMemberNames = new Dictionary<EntryModel, string>();
             public readonly HashSet<string> MemberUsed = new HashSet<string>(StringComparer.Ordinal);
         }
 
@@ -209,6 +213,20 @@ namespace Severnbli.LocalizationCodegen.Editor
                     scope.MemberNames[entry] = CodegenText.Unique(pair.Key, scope.MemberUsed);
             }
 
+            // Async names are claimed after every key's own name, so adding UniTask members never renames an
+            // existing member. A key that already ends in "Async" pushes the generated variant to a suffix.
+            if (options.UniTask)
+            {
+                var byId = scope.Entries
+                    .OrderBy(e => e.Id)
+                    .ThenBy(e => e.Key, StringComparer.Ordinal);
+                foreach (var entry in byId)
+                {
+                    scope.AsyncMemberNames[entry] =
+                        CodegenText.Unique(scope.MemberNames[entry].TrimStart('@') + "Async", scope.MemberUsed);
+                }
+            }
+
             foreach (var child in scope.Children)
                 AssignMemberNames(child, options);
         }
@@ -240,6 +258,13 @@ namespace Severnbli.LocalizationCodegen.Editor
             {
                 sb.Append('\n');
                 EmitEntry(sb, entry, scope.MemberNames[entry], options, level + 1);
+
+                string asyncName;
+                if (scope.AsyncMemberNames.TryGetValue(entry, out asyncName))
+                {
+                    sb.Append('\n');
+                    EmitAsyncEntry(sb, entry, asyncName, options, level + 1);
+                }
             }
 
             if (isRoot && options.Refs)
@@ -293,6 +318,55 @@ namespace Severnbli.LocalizationCodegen.Editor
         }
 
         static bool IsAssetEntry(EntryModel entry) => entry.AssetTypeName != null;
+
+        /// <summary>Emits the UniTask variant of an entry, mirroring the parameters of its synchronous member.</summary>
+        static void EmitAsyncEntry(StringBuilder sb, EntryModel entry, string name, EmitOptions options, int level)
+        {
+            if (options.XmlDocs && !string.IsNullOrEmpty(entry.Preview))
+                EmitSummary(sb, entry.Preview, level);
+
+            var runtime = EmitOptions.UniTaskRuntimeTypeName;
+            if (IsAssetEntry(entry))
+            {
+                var type = string.IsNullOrEmpty(entry.AssetTypeName) ? AssetObject : entry.AssetTypeName;
+                sb.Append(Indent(level)).Append("public static ").Append(UniTaskType).Append('<').Append(type).Append("> ")
+                  .Append(name).Append('(').Append(CancellationTokenType).Append(' ').Append(CancellationTokenName)
+                  .Append(" = default)\n");
+                sb.Append(Indent(level)).Append("    => ").Append(runtime).Append(".GetAssetAsync<").Append(type)
+                  .Append(">(TableName, ").Append(CodegenText.Literal(entry.Key)).Append(", ")
+                  .Append(CancellationTokenName).Append(");\n");
+                return;
+            }
+
+            var withParams = options.SmartStrings != SmartStringMode.Off && entry.Params.Count > 0;
+            var positional = withParams
+                ? entry.Params.Where(p => p.IsPositional).OrderBy(p => p.Index).ToList()
+                : new List<SmartParam>();
+            var named = withParams
+                ? entry.Params.Where(p => !p.IsPositional).OrderBy(p => p.SourceName, StringComparer.Ordinal).ToList()
+                : new List<SmartParam>();
+
+            // A smart string variable may itself be called cancellationToken.
+            var parameterNames = new HashSet<string>(entry.Params.Select(p => p.ClrName.TrimStart('@')), StringComparer.Ordinal);
+            var tokenName = withParams ? CodegenText.Unique(CancellationTokenName, parameterNames) : CancellationTokenName;
+
+            if (withParams)
+            {
+                EmitParameterDocs(sb, positional, named, level);
+                sb.Append(Indent(level)).Append("/// <param name=\"").Append(tokenName)
+                  .Append("\">Stops waiting for the table to load.</param>\n");
+            }
+
+            var parameters = ParameterList(positional, named);
+            sb.Append(Indent(level)).Append("public static ").Append(UniTaskType).Append("<string> ").Append(name).Append('(')
+              .Append(parameters).Append(parameters.Length > 0 ? ", " : "")
+              .Append(CancellationTokenType).Append(' ').Append(tokenName).Append(" = default)\n");
+            sb.Append(Indent(level)).Append("    => ").Append(runtime).Append(".GetStringAsync(TableName, ")
+              .Append(CodegenText.Literal(entry.Key)).Append(", ");
+            if (withParams)
+                sb.Append(PositionalArray(positional)).Append(", ").Append(NamedDictionary(named)).Append(", ");
+            sb.Append(tokenName).Append(");\n");
+        }
 
         static void EmitRefClass(StringBuilder sb, TableModel model, EmitOptions options, int level)
         {

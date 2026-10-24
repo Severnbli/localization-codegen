@@ -350,6 +350,141 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             StringAssert.DoesNotContain("LocalizedString ToString =>", refClass);
         }
 
+        static EmitOptions UniTaskOptions()
+        {
+            return new EmitOptions
+            {
+                Namespace = "Localization",
+                UseRuntimeAlias = true,
+                SmartStrings = SmartStringMode.Methods,
+                UniTask = true
+            };
+        }
+
+        [Test]
+        public void UniTask_IsNotEmittedByDefault()
+        {
+            var model = Model("Ui", false, (1L, "Title"));
+            var options = new EmitOptions { Namespace = "Localization", UseRuntimeAlias = true };
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.DoesNotContain("UniTask", output);
+            StringAssert.DoesNotContain("TitleAsync", output);
+        }
+
+        [Test]
+        public void UniTask_StringEntryGetsAsyncMethod()
+        {
+            var model = Model("Ui", false, (1L, "Title"));
+            var options = UniTaskOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains("public static string Title => __LT.GetString(TableName, \"Title\");", output);
+            StringAssert.Contains(
+                "public static global::Cysharp.Threading.Tasks.UniTask<string> TitleAsync(" +
+                "global::System.Threading.CancellationToken cancellationToken = default)\n" +
+                "            => global::Severnbli.LocalizationCodegen.LocalizedTablesUniTask.GetStringAsync(" +
+                "TableName, \"Title\", cancellationToken);",
+                output);
+        }
+
+        [Test]
+        public void UniTask_SmartStringPassesArgumentsAndToken()
+        {
+            var entry = new EntryModel { Id = 1, Key = "Greeting" };
+            entry.Params.Add(new SmartParam { IsPositional = true, Index = 0, SourceName = "0", ClrName = "arg0", TypeName = "object" });
+            entry.Params.Add(new SmartParam { SourceName = "player", ClrName = "player", TypeName = "object" });
+            var model = new TableModel { Name = "Ui" };
+            model.Entries.Add(entry);
+
+            var options = UniTaskOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(
+                "public static global::Cysharp.Threading.Tasks.UniTask<string> GreetingAsync(object arg0, object player, " +
+                "global::System.Threading.CancellationToken cancellationToken = default)",
+                output);
+            StringAssert.Contains(
+                ".GetStringAsync(TableName, \"Greeting\", new object[] { arg0 }, " +
+                "new global::System.Collections.Generic.Dictionary<string, object> { [\"player\"] = player }, cancellationToken);",
+                output);
+            StringAssert.Contains("/// <param name=\"cancellationToken\">", output);
+        }
+
+        [Test]
+        public void UniTask_TokenParameterAvoidsSmartStringParameterNames()
+        {
+            var entry = new EntryModel { Id = 1, Key = "Wait" };
+            entry.Params.Add(new SmartParam { SourceName = "cancellationToken", ClrName = "cancellationToken", TypeName = "object" });
+            var model = new TableModel { Name = "Ui" };
+            model.Entries.Add(entry);
+
+            var options = UniTaskOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains("WaitAsync(object cancellationToken, global::System.Threading.CancellationToken cancellationToken_2 = default)", output);
+            StringAssert.Contains("[\"cancellationToken\"] = cancellationToken }, cancellationToken_2);", output);
+        }
+
+        [Test]
+        public void UniTask_AssetEntryGetsAsyncMethod()
+        {
+            var model = new TableModel { Name = "Icons", IsAsset = true };
+            model.Entries.Add(new EntryModel { Id = 1, Key = "Logo", AssetTypeName = "global::UnityEngine.Sprite" });
+
+            var options = UniTaskOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(
+                "public static global::Cysharp.Threading.Tasks.UniTask<global::UnityEngine.Sprite> LogoAsync(" +
+                "global::System.Threading.CancellationToken cancellationToken = default)\n" +
+                "            => global::Severnbli.LocalizationCodegen.LocalizedTablesUniTask.GetAssetAsync<global::UnityEngine.Sprite>(" +
+                "TableName, \"Logo\", cancellationToken);",
+                output);
+        }
+
+        [Test]
+        public void UniTask_AsyncNamesNeverTakeAnExistingKeyName()
+        {
+            // The key "TitleAsync" keeps its own name; the variant of "Title" moves to a suffix.
+            var model = Model("Ui", false, (1L, "Title"), (2L, "TitleAsync"), (3L, "class"));
+            var options = UniTaskOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains("public static string TitleAsync => __LT.GetString(TableName, \"TitleAsync\");", output);
+            StringAssert.Contains("UniTask<string> TitleAsync_2(", output);
+            StringAssert.Contains("UniTask<string> TitleAsyncAsync(", output);
+            StringAssert.Contains("UniTask<string> classAsync(", output);
+        }
+
+        [Test]
+        public void UniTask_ChangesTheOptionSignatureOnlyWhenEnabled()
+        {
+            var off = new EmitOptions();
+            var on = new EmitOptions { UniTask = true };
+
+            StringAssert.DoesNotContain("unitask", off.Signature());
+            Assert.AreNotEqual(off.Signature(), on.Signature());
+        }
+
+        [Test]
+        public void UniTask_GeneratedAsmdefReferencesUniTask()
+        {
+            string name;
+            var withUniTask = CodeGenerator.BuildAsmdefContent(UniTaskOptions(), new List<TableModel>(), out name);
+            var without = CodeGenerator.BuildAsmdefContent(LegacyOptions(), new List<TableModel>(), out name);
+
+            StringAssert.Contains("\"com.severnbli.localization-codegen.UniTask\"", withUniTask);
+            StringAssert.Contains("\"UniTask\"", withUniTask);
+            StringAssert.DoesNotContain("UniTask", without);
+        }
+
         [Test]
         public void KeySeparators_CreateNestedClasses()
         {
