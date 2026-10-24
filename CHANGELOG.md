@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0] - 2026-10-24
+
+### Added
+- Optional UniTask support. Enable **UniTask Members** to emit a `...Async` method returning `UniTask` next to
+  every string and asset member, with a `CancellationToken` and the same smart string parameters.
+- `LocalizedTablesUniTask` (`GetStringAsync`, `GetAssetAsync`) and the `LocalizedString.GetLocalizedStringUniTask()`
+  extension in the optional `com.severnbli.localization-codegen.UniTask` assembly, which compiles only when UniTask
+  (`com.cysharp.unitask`) is installed or `LOCALIZATION_CODEGEN_UNITASK` is defined.
+- Editor tests compile the generated code with Unity's compiler, with warnings as errors.
+
+### Fixed
+- `Ref` members of asset table entries did not compile: `LocalizedSprite`, `LocalizedAsset<T>` and the other
+  localized asset types have no `(table, entry)` constructor.
+
 ## [1.1.1] - 2026-10-24
 
 ### Fixed
