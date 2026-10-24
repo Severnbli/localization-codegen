@@ -333,7 +333,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
                 output);
             StringAssert.Contains(
                 "public static global::UnityEngine.Localization.LocalizedSprite Sprite => " +
-                "new global::UnityEngine.Localization.LocalizedSprite(TableName, \"Sprite\");",
+                "new global::UnityEngine.Localization.LocalizedSprite { TableReference = TableName, TableEntryReference = \"Sprite\" };",
                 output);
         }
 

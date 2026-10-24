@@ -347,10 +347,12 @@ namespace Severnbli.LocalizationCodegen.Editor
                 }
                 else
                 {
+                    // Unlike LocalizedString, LocalizedAsset types only have a parameterless constructor.
                     var type = string.IsNullOrEmpty(entry.AssetTypeName) ? AssetObject : entry.AssetTypeName;
                     sb.Append(Indent(level + 1)).Append("public static ").Append(GetLocalizedAssetType(type)).Append(' ')
                       .Append(name).Append(" => new ").Append(GetLocalizedAssetType(type))
-                      .Append("(TableName, ").Append(CodegenText.Literal(entry.Key)).Append(");\n");
+                      .Append(" { TableReference = TableName, TableEntryReference = ")
+                      .Append(CodegenText.Literal(entry.Key)).Append(" };\n");
                 }
             }
 
