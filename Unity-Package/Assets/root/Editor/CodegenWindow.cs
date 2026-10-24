@@ -70,7 +70,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             else
             {
                 EditorGUILayout.HelpBox(
-                    $"Last run: {result.Total} table class file(s) — {result.Written} written, " +
+                    $"Last run: {result.Total} table class file(s) – {result.Written} written, " +
                     $"{result.Deleted} deleted, {result.Unchanged} unchanged.",
                     MessageType.Info);
             }

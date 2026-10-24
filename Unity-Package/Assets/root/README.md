@@ -42,7 +42,7 @@
 
 ## Overview
 
-Localization Codegen reads your [Unity Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.5/manual/index.html) table collections and generates plain C# classes for them — one static class per collection, one member per key. No runtime reflection, no string lookups in your game code, and full autocomplete plus compile-time safety.
+Localization Codegen reads your [Unity Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.5/manual/index.html) table collections and generates plain C# classes for them – one static class per collection, one member per key. No runtime reflection, no string lookups in your game code, and full autocomplete plus compile-time safety.
 
 ```csharp
 // Before
@@ -79,7 +79,7 @@ label.text = Ui.HelloWorld;
    label.text = Ui.HelloWorld;
    ```
 
-Edit your tables as usual — the classes regenerate on their own.
+Edit your tables as usual – the classes regenerate on their own.
 
 ## Installation
 
@@ -184,7 +184,7 @@ This variant bypasses Package Manager, so **versioning is manual**:
 |---|---|
 | Unity | 2021.3 or newer |
 | `com.unity.localization` | 1.5.x (automatic with the UPM variants, manual with the standard `.unitypackage`) |
-| `com.cysharp.unitask` | 2.x, optional — only for [UniTask members](#unitask) |
+| `com.cysharp.unitask` | 2.x, optional – only for [UniTask members](#unitask) |
 
 ## Usage
 
@@ -264,7 +264,7 @@ public static string Greeting(object arg0, int count)
 
 The regular members return a **value**: `Ui.HelloWorld` is the text in the current locale at the moment you read it. When the player switches language, a label you filled that way keeps the old text.
 
-Enable **Generate Reference Members** to also get a nested `Ref` class that returns a **reference** to the entry instead — Unity's own `LocalizedString` (or `LocalizedAsset<T>` for asset tables), which knows which entry it points at and can follow locale changes:
+Enable **Generate Reference Members** to also get a nested `Ref` class that returns a **reference** to the entry instead – Unity's own `LocalizedString` (or `LocalizedAsset<T>` for asset tables), which knows which entry it points at and can follow locale changes:
 
 ```csharp
 public static class Ref
@@ -274,7 +274,7 @@ public static class Ref
 }
 ```
 
-Use it wherever Unity Localization expects a reference — still without magic strings:
+Use it wherever Unity Localization expects a reference – still without magic strings:
 
 ```csharp
 // A LocalizeStringEvent component updates its label whenever the locale changes.

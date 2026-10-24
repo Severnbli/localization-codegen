@@ -102,7 +102,7 @@ jobs:
 
             while IFS=$'\t' read -r sha message username; do
               [ -z "$sha" ] && continue
-              echo "- [\`${sha:0:7}\`](${repo_url}/commit/${sha}) — ${message} by @${username}" >> release.md
+              echo "- [\`${sha:0:7}\`](${repo_url}/commit/${sha}) – ${message} by @${username}" >> release.md
             done <<< "$commits"
           fi
 
