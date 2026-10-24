@@ -51,15 +51,15 @@ $VersionFiles = @(
     },
     @{
         Path        = "Unity-Package/Assets/root/README.md"
-        Pattern     = "https://github\.com/https://github.com/Severnbli/localization-codegen.git/releases/download/[\d\.]+/Localization-Codegen-Installer\.unitypackage"
-        Replace     = "https://github.com/https://github.com/Severnbli/localization-codegen.git/releases/download/{VERSION}/Localization-Codegen-Installer.unitypackage"
-        Description = "Package README download URL"
+        Pattern     = '"com\.severnbli\.localization-codegen":\s*"[\d\.]+"'
+        Replace     = '"com.severnbli.localization-codegen": "{VERSION}"'
+        Description = "Package README manual install version"
     },
     @{
         Path        = "README.md"
-        Pattern     = "https://github\.com/https://github.com/Severnbli/localization-codegen.git/releases/download/[\d\.]+/Localization-Codegen-Installer\.unitypackage"
-        Replace     = "https://github.com/https://github.com/Severnbli/localization-codegen.git/releases/download/{VERSION}/Localization-Codegen-Installer.unitypackage"
-        Description = "Repository README download URL"
+        Pattern     = '"com\.severnbli\.localization-codegen":\s*"[\d\.]+"'
+        Replace     = '"com.severnbli.localization-codegen": "{VERSION}"'
+        Description = "Repository README manual install version"
     }
 )
 

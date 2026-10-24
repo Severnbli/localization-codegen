@@ -21,12 +21,7 @@
       "name": "package.openupm.com",
       "url": "https://package.openupm.com",
       "scopes": [
-        "com.ivanmurzak",
-        "extensions.unity",
-        "org.nuget.com.ivanmurzak",
-        "org.nuget.microsoft",
-        "org.nuget.system",
-        "org.nuget.r3"
+        "PACKAGE_ID"
       ]
     }
   ]
