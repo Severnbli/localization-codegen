@@ -63,6 +63,9 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
                 }
             }
 
+            // AssemblyBuilder is obsolete from Unity 6.5 (CS0618) but still the only in-editor way to compile with
+            // Unity's own compiler and references; replace it once Unity ships the Roslyn-based alternative.
+#pragma warning disable CS0618
             var builder = new AssemblyBuilder(Path.Combine(folder, "CompileCheck.dll"), sources.ToArray())
             {
                 referencesOptions = ReferencesOptions.UseEngineModules,
@@ -78,6 +81,8 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
                     }
                 }
             };
+
+#pragma warning restore CS0618
 
             CompilerMessage[] messages = null;
             builder.buildFinished += (_, result) => messages = result;
