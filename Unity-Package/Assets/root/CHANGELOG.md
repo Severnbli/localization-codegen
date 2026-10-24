@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.1] - 2026-10-24
+
+### Added
+- Picking an output folder inside another assembly definition (directly or through an `.asmref`) offers to add
+  the references the generated code needs to that `.asmdef`, or to give the code its own `.asmdef`. The
+  **Output** settings show which assembly the code compiles into, and generation warns about missing references.
+
+### Changed
+- Restyled settings: collapsible sections, consistent label widths, options that do not apply are greyed out,
+  and a shared toolbar (Regenerate, Verify, Open Output Folder, Setup Wizard) with a last-run summary. Every
+  setting can be found through the Project Settings search.
+
+### Fixed
+- A folder picked with **Browse** was not saved.
+- `AssemblyBuilder` obsolete warning in the editor tests on Unity 6.5.
+
 ## [1.2.0] - 2026-10-24
 
 ### Added
