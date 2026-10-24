@@ -67,3 +67,7 @@ UserSettings/
 
 # Claude
 .claude/
+# Created by the package integration tests
+/[Aa]ssets/AddressableAssetsData/
+/[Aa]ssets/AddressableAssetsData.meta
+/ProjectSettings/LocalizationCodegenSettings.asset

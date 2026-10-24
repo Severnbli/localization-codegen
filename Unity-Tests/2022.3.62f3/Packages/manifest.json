@@ -37,16 +37,5 @@
   },
   "testables": [
     "com.severnbli.localization-codegen"
-  ],
-  "scopedRegistries": [
-    {
-      "name": "package.openupm.com",
-      "url": "https://package.openupm.com",
-      "scopes": [
-        "com.ivanmurzak",
-        "extensions.unity",
-        "org.nuget"
-      ]
-    }
   ]
 }

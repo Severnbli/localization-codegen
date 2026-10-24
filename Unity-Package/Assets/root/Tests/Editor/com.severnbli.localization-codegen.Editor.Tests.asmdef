@@ -6,7 +6,8 @@
         "com.severnbli.localization-codegen.Runtime",
         "com.severnbli.localization-codegen.Editor",
         "Unity.Localization",
-        "Unity.Localization.Editor"
+        "Unity.Localization.Editor",
+        "Unity.Addressables.Editor"
     ],
     "includePlatforms": [
         "Editor"

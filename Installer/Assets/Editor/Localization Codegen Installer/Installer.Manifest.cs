@@ -31,13 +31,10 @@ namespace Severnbli.LocalizationCodegen.Installer
         // Property values
         public const string RegistryName = "package.openupm.com";
         public const string RegistryUrl = "https://package.openupm.com";
+        // Scopes resolved from OpenUPM. The package's only dependency (com.unity.localization) comes from the
+        // Unity registry, so the package itself is the only scope needed.
         public static readonly string[] PackageIds = new string[] {
-            "com.ivanmurzak",            // Ivan Murzak's OpenUPM packages
-            "extensions.unity",          // Ivan Murzak's OpenUPM packages (older)
-            "org.nuget.com.ivanmurzak",  // Ivan Murzak's NuGet packages
-            "org.nuget.microsoft",       // Microsoft NuGet packages
-            "org.nuget.system",          // Microsoft NuGet packages
-            "org.nuget.r3"               // R3 package NuGet package
+            PackageId
         };
 
         /// <summary>
@@ -46,7 +43,6 @@ namespace Severnbli.LocalizationCodegen.Installer
         /// <param name="currentVersion">Current package version string</param>
         /// <param name="installerVersion">Installer version string</param>
         /// <returns>True if version should be updated (installer version is higher), false otherwise</returns>
-
         internal static bool ShouldUpdateVersion(string currentVersion, string installerVersion)
         {
             if (string.IsNullOrEmpty(currentVersion))
@@ -99,12 +95,12 @@ namespace Severnbli.LocalizationCodegen.Installer
             var scopedRegistries = manifestJson[ScopedRegistries];
             if (scopedRegistries == null)
             {
-                manifestJson[ScopedRegistries] = new JSONArray();
+                manifestJson[ScopedRegistries] = scopedRegistries = new JSONArray();
                 modified = true;
             }
 
             // --- Add OpenUPM registry if needed
-            var openUpmRegistry = scopedRegistries!.Linq
+            var openUpmRegistry = scopedRegistries.Linq
                 .Select(kvp => kvp.Value)
                 .Where(r => r.Linq
                     .Any(p => p.Key == Name && p.Value == RegistryName))
@@ -153,7 +149,7 @@ namespace Severnbli.LocalizationCodegen.Installer
 
             // Only update version if installer version is higher than current version
             var currentVersion = dependencies[PackageId];
-            if (currentVersion == null || ShouldUpdateVersion(currentVersion, Version))
+            if (currentVersion == null || ShouldUpdateVersion(currentVersion.Value, Version))
             {
                 dependencies[PackageId] = Version;
                 modified = true;

@@ -263,7 +263,7 @@ namespace Severnbli.LocalizationCodegen.Editor
                 EmitSummary(sb, entry.Preview, level);
 
             var runtime = RuntimeType(options);
-            if (!model_IsAsset(entry))
+            if (!IsAssetEntry(entry))
             {
                 var positional = entry.Params.Where(p => p.IsPositional).OrderBy(p => p.Index).ToList();
                 var named = entry.Params.Where(p => !p.IsPositional).OrderBy(p => p.SourceName, StringComparer.Ordinal).ToList();
@@ -292,17 +292,17 @@ namespace Severnbli.LocalizationCodegen.Editor
             }
         }
 
-        static bool model_IsAsset(EntryModel entry) => entry.AssetTypeName != null;
+        static bool IsAssetEntry(EntryModel entry) => entry.AssetTypeName != null;
 
         static void EmitRefClass(StringBuilder sb, TableModel model, EmitOptions options, int level)
         {
+            var strict = !string.IsNullOrEmpty(options.KeySeparators);
             sb.Append(Indent(level)).Append("public static class Ref\n");
             sb.Append(Indent(level)).Append("{\n");
 
-            var used = new HashSet<string>(StringComparer.Ordinal)
-            {
-                "TableName", "Ref"
-            };
+            var used = new HashSet<string>(StringComparer.Ordinal) { "TableName", "Ref" };
+            foreach (var objectMember in CodegenText.ObjectMemberNames)
+                used.Add(objectMember);
 
             var entries = model.Entries
                 .Where(e => !string.IsNullOrEmpty(e.Key))
@@ -313,16 +313,12 @@ namespace Severnbli.LocalizationCodegen.Editor
             foreach (var entry in entries)
             {
                 sb.Append('\n');
-                var name = CodegenText.Unique(
-                    options.Naming == NamingConvention.PascalCase
-                        ? CodegenText.ToPascalCase(entry.Key)
-                        : CodegenText.ToIdentifier(entry.Key, options.Naming == NamingConvention.PascalCase || !string.IsNullOrEmpty(options.KeySeparators)),
-                    used);
+                var name = CodegenText.Unique(BaseMemberName(entry.Key, options, strict), used);
 
                 if (options.XmlDocs && !string.IsNullOrEmpty(entry.Preview))
                     EmitSummary(sb, entry.Preview, level + 1);
 
-                if (entry.AssetTypeName == null)
+                if (!IsAssetEntry(entry))
                 {
                     var positional = entry.Params.Where(p => p.IsPositional).OrderBy(p => p.Index).ToList();
                     var named = entry.Params.Where(p => !p.IsPositional).OrderBy(p => p.SourceName, StringComparer.Ordinal).ToList();
@@ -446,9 +442,9 @@ namespace Severnbli.LocalizationCodegen.Editor
 
         static void EmitSummary(StringBuilder sb, string preview, int level)
         {
-            var text = CodegenText.SanitizeComment(
-                CodegenText.Truncate(
-                    CodegenText.EscapeXml(preview.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ')), 120));
+            // Truncate before escaping so an XML entity such as &amp; is never cut in half.
+            var singleLine = preview.Replace("\r\n", " ").Replace('\r', ' ').Replace('\n', ' ');
+            var text = CodegenText.EscapeXml(CodegenText.SanitizeComment(CodegenText.Truncate(singleLine, 120)));
             sb.Append(Indent(level)).Append("/// <summary>").Append(text).Append("</summary>\n");
         }
 

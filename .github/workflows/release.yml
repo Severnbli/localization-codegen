@@ -1,7 +1,7 @@
 name: release
 
-# Releases are published only on demand. The workflow runs the full Unity test
-# matrix itself, so a manually triggered release is still gated on green tests.
+# Releases are published only on demand. The workflow calls test.yml, so a
+# manually triggered release is gated on exactly the same tests as a PR.
 on:
   workflow_dispatch:
 
@@ -25,7 +25,6 @@ jobs:
       # "<package-name>-<version>", the common part of every release asset name.
       suffix: ${{ steps.info.outputs.suffix }}
       prev_tag: ${{ steps.info.outputs.prev_tag }}
-      tag_exists: ${{ steps.info.outputs.tag_exists }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,24 +32,24 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Resolve version, previous tag and tag existence
+      # A release for an existing tag is a mistake (the version was not
+      # bumped), so stop here with a clear error instead of skipping every job.
+      - name: Resolve version and previous tag
         id: info
         run: |
           set -euo pipefail
           version="$(jq -r .version Unity-Package/Assets/root/package.json)"
           package_name="$(jq -r .name Unity-Package/Assets/root/package.json)"
-          prev_tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
           if [ -n "$(git ls-remote --tags origin "refs/tags/${version}")" ]; then
-            tag_exists=true
-          else
-            tag_exists=false
+            echo "::error::Tag ${version} already exists. Bump the version (commands/bump-version.ps1) before releasing."
+            exit 1
           fi
+          prev_tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
           {
             echo "version=${version}"
             echo "package_name=${package_name}"
             echo "suffix=${package_name}-${version}"
             echo "prev_tag=${prev_tag}"
-            echo "tag_exists=${tag_exists}"
           } >> "$GITHUB_OUTPUT"
 
   # Generates release notes (release.md) in parallel with tests/builds.
@@ -58,7 +57,6 @@ jobs:
   prepare-release-notes:
     runs-on: ubuntu-latest
     needs: [check-version-tag]
-    if: needs.check-version-tag.outputs.tag_exists == 'false'
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -115,13 +113,10 @@ jobs:
           path: ./release.md
           retention-days: 1
 
+  # The installer's EditMode tests run in test.yml; this job only exports it.
   build-unity-installer:
     runs-on: ubuntu-latest
     needs: [check-version-tag]
-    if: needs.check-version-tag.outputs.tag_exists == 'false'
-    permissions:
-      contents: read
-      checks: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -133,58 +128,19 @@ jobs:
           android: true
           dotnet: true
           haskell: true
-          large-packages: true
+          large-packages: false
           swap-storage: true
 
+      # Same key scheme as test_unity_plugin.yml, so the export reuses the
+      # Library/ cached by the installer tests. The Unity version must be part
+      # of the key: Library/ is not portable across editor versions.
       - name: Cache Unity Library
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ./Installer/Library
-          # The Unity version must be part of the key: Library/ is not portable
-          # across editor versions, and restoring a foreign one forces a silent
-          # (and sometimes failing) project upgrade.
-          key: Library-Unity-Installer-${{ env.INSTALLER_UNITY_VERSION }}-${{ hashFiles('Installer/Packages/manifest.json', 'Installer/Packages/packages-lock.json') }}
-
-      - name: Test Unity Installer (EditMode)
-        uses: game-ci/unity-test-runner@32e57712352b500e17974b245a6dce9e11a73213 # v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          projectPath: ./Installer
-          unityVersion: ${{ env.INSTALLER_UNITY_VERSION }}
-          customImage: "unityci/editor:ubuntu-${{ env.INSTALLER_UNITY_VERSION }}-base-3"
-          testMode: editmode
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Unity Installer EditMode Test Results
-          artifactsPath: artifacts-installer-editmode
-          customParameters: -CI true -GITHUB_ACTIONS true
-
-      - name: Upload Unity Installer EditMode artifacts
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: artifacts-installer-editmode
-          path: artifacts-installer-editmode
-
-      - name: Clean Unity artifacts and reset git state
-        run: |
-          set -euo pipefail
-          # The test container runs as root, so these directories are not
-          # removable by the runner user. `rm -rf` is idempotent, so a genuine
-          # failure here means the workspace is in an unexpected state and the
-          # build should not continue.
-          sudo rm -rf ./Installer/Logs/
-          sudo rm -rf ./Installer/Temp/
-          sudo rm -rf ./artifacts-installer-editmode/
-          # Drop stale export output too, so a failed export cannot be masked
-          # by a .unitypackage left over from an earlier run.
-          sudo rm -rf ./Installer/build/
-
-          # Reset only tracked files to their committed state
-          git reset --hard HEAD
-          echo "Cleaned Unity artifacts and reset tracked files"
+          key: Library-installer-${{ env.INSTALLER_UNITY_VERSION }}-${{ hashFiles('Installer/Packages/manifest.json', 'Installer/Packages/packages-lock.json') }}
+          restore-keys: |
+            Library-installer-${{ env.INSTALLER_UNITY_VERSION }}-
 
       - name: Export Unity Package
         uses: game-ci/unity-builder@4423ee75828dff56037d1d1cfdac6b68e3a6ba00 # v4
@@ -202,11 +158,13 @@ jobs:
           customParameters: -CI true -GITHUB_ACTIONS true
 
       # GameCI runs Unity inside a Docker container as root, so everything the
-      # exporter writes under ./Installer/build is root-owned. The runner user
-      # cannot modify entries in that directory, which is why the later
-      # rename/move failed with EACCES. Hand only the generated output
-      # directory back to the runner - never the rest of the checkout.
-      - name: Take ownership of Unity build output
+      # exporter writes under ./Installer/build is root-owned and the runner
+      # user cannot rename it (EACCES). Hand only the generated output
+      # directory back to the runner - never the rest of the checkout - then
+      # rename the package to the release naming scheme.
+      - name: Collect installer package
+        env:
+          SUFFIX: ${{ needs.check-version-tag.outputs.suffix }}
         run: |
           set -euo pipefail
           package="./Installer/build/Localization-Codegen-Installer.unitypackage"
@@ -215,33 +173,20 @@ jobs:
             exit 1
           fi
           sudo chown -R "$(id -u):$(id -g)" ./Installer/build
-          ls -l ./Installer/build
-
-      # (3) The exporter always writes Localization-Codegen-Installer.unitypackage;
-      # rename it to the release naming scheme.
-      - name: Rename installer to release asset name
-        env:
-          SUFFIX: ${{ needs.check-version-tag.outputs.suffix }}
-        run: |
-          set -euo pipefail
-          source_package="./Installer/build/Localization-Codegen-Installer.unitypackage"
-          target_package="./Installer/build/installer-${SUFFIX}.unitypackage"
-          if [ ! -f "$source_package" ]; then
-            echo "::error::Cannot rename installer: $source_package does not exist"
-            exit 1
-          fi
-          mv "$source_package" "$target_package"
+          mkdir -p dist
+          mv "$package" "dist/installer-${SUFFIX}.unitypackage"
+          ls -l dist
 
       - name: Upload Unity Package as artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: unity-installer-package
-          path: ./Installer/build/installer-${{ needs.check-version-tag.outputs.suffix }}.unitypackage
+          name: release-installer
+          path: dist/*.unitypackage
           if-no-files-found: error
           retention-days: 1
 
   # Builds the signed UPM package (.tgz with package/.attestation.p7m) in parallel
-  # with tests/builds and uploads it as a `signed-upm-package` artifact for the
+  # with tests/builds and uploads it as a `release-upm-tarball` artifact for the
   # atomic release publish in release-unity-plugin.
   #
   # HARD-GATE: this job is NOT continue-on-error. Missing UPM signing secrets fail
@@ -249,7 +194,7 @@ jobs:
   # signed UPM tarball (see docs/openupm-signing.md for the blocking-semantics
   # rationale).
   #
-  # Required repo secrets (configure via `gh secret set --repo IvanMurzak/YOUR_REPO <NAME>`):
+  # Required repo secrets (configure via `gh secret set --repo Severnbli/localization-codegen <NAME>`):
   #   - UPM_SERVICE_ACCOUNT_KEY_ID
   #   - UPM_SERVICE_ACCOUNT_KEY_SECRET
   #   - UPM_ORG_ID
@@ -260,7 +205,6 @@ jobs:
   build-signed-upm-package:
     runs-on: ubuntu-latest
     needs: [check-version-tag]
-    if: needs.check-version-tag.outputs.tag_exists == 'false'
     env:
       PACKAGE_DIR: Unity-Package/Assets/root
       DIST_DIR: /tmp/signed-upm-dist
@@ -285,17 +229,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Read package metadata
-        id: meta
-        run: |
-          set -euo pipefail
-          package_name="$(jq -r '.name' "$PACKAGE_DIR/package.json")"
-          package_version="$(jq -r '.version' "$PACKAGE_DIR/package.json")"
-
-          printf 'Package name: %s\n' "$package_name"
-          printf 'Package version: %s\n' "$package_version"
-          echo "package_name=${package_name}" >> "$GITHUB_OUTPUT"
-
       # No secrets are exposed to this step. The install script is only run if its
       # hash matches the one pinned in the UPM_INSTALL_SHA256 repo variable.
       - name: Install Unity UPM CLI
@@ -310,10 +243,8 @@ jobs:
             exit 1
           fi
           bash install.sh
+          "$HOME/.upm/bin/upm" --help > /dev/null
           echo "$HOME/.upm/bin" >> "$GITHUB_PATH"
-
-      - name: Verify Unity UPM CLI
-        run: upm --help
 
       - name: Sign package
         env:
@@ -327,7 +258,7 @@ jobs:
       - name: Verify signed package contains attestation
         shell: bash
         env:
-          PACKAGE_NAME: ${{ steps.meta.outputs.package_name }}
+          PACKAGE_NAME: ${{ needs.check-version-tag.outputs.package_name }}
           SUFFIX: ${{ needs.check-version-tag.outputs.suffix }}
         run: |
           # Without errexit a failed attestation grep would be silently ignored
@@ -367,8 +298,8 @@ jobs:
       - name: Upload signed UPM package as artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: signed-upm-package
-          path: /tmp/signed-upm-dist/*.tgz
+          name: release-upm-tarball
+          path: ${{ env.DIST_DIR }}/*.tgz
           if-no-files-found: error
           retention-days: 1
 
@@ -385,7 +316,6 @@ jobs:
   build-package-unitypackage:
     runs-on: ubuntu-latest
     needs: [check-version-tag]
-    if: needs.check-version-tag.outputs.tag_exists == 'false'
     env:
       PACKAGE_DIR: Unity-Package/Assets/root
       SUFFIX: ${{ needs.check-version-tag.outputs.suffix }}
@@ -466,30 +396,20 @@ jobs:
       - name: Upload package unitypackage as artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: package-unitypackage
+          name: release-unitypackage
           path: dist/*.unitypackage
           if-no-files-found: error
           retention-days: 1
 
-  # --- UNITY TESTS ---
-  # Runs in parallel with the installer build; add a Unity version or test mode
-  # by editing the matrix below.
-  test-unity:
+  # Same matrix as pull requests (plugin on every Unity version and test mode,
+  # plus the installer EditMode tests), running in parallel with the builds.
+  test:
     needs: [check-version-tag]
-    if: needs.check-version-tag.outputs.tag_exists == 'false'
     permissions:
       contents: read
       checks: write
-    strategy:
-      fail-fast: false
-      matrix:
-        unityVersion: [2022.3.62f3, 6000.3.1f1]
-        testMode: [editmode, playmode, standalone]
-    uses: ./.github/workflows/test_unity_plugin.yml
-    with:
-      projectPath: ./Unity-Tests/${{ matrix.unityVersion }}
-      unityVersion: ${{ matrix.unityVersion }}
-      testMode: ${{ matrix.testMode }}
+      pull-requests: read
+    uses: ./.github/workflows/test.yml
     secrets: inherit
 
   # Atomic publish point - gated on EVERY prerequisite (tests, installer build,
@@ -506,9 +426,8 @@ jobs:
         build-unity-installer,
         build-signed-upm-package,
         build-package-unitypackage,
-        test-unity,
+        test,
       ]
-    if: needs.check-version-tag.outputs.tag_exists == 'false'
     permissions:
       contents: write
       # Needed by the build provenance attestation below.
@@ -517,62 +436,40 @@ jobs:
     outputs:
       version: ${{ needs.check-version-tag.outputs.version }}
     steps:
-      - name: Download release notes artifact
+      # Every release input is uploaded as a release-* artifact; test results
+      # are not, so they are not downloaded.
+      - name: Download release artifacts
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-notes
-          path: ./release-notes
+          pattern: release-*
+          path: ./dist
+          merge-multiple: true
 
-      - name: Download Unity installer artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: unity-installer-package
-          path: ./assets
-
-      - name: Download signed UPM package artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: signed-upm-package
-          path: ./assets
-
-      - name: Download package unitypackage artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: package-unitypackage
-          path: ./assets
-
-      - name: List assembled release assets
-        run: |
-          set -e
-          echo "Release notes:"
-          ls -la ./release-notes
-          echo ""
-          echo "Release assets:"
-          ls -la ./assets
+      - name: List assembled release files
+        run: ls -la ./dist
 
       # Signs every release file with a GitHub build provenance attestation, which
       # is the signature mechanism that works for a .unitypackage. Verify with:
       #   gh attestation verify <file> --repo Severnbli/localization-codegen
-      # TODO: pin to a commit SHA like the other actions (check the latest major).
       - name: Attest build provenance of release assets
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
         with:
           subject-path: |
-            ./assets/*.unitypackage
-            ./assets/*.tgz
+            ./dist/*.unitypackage
+            ./dist/*.tgz
 
       - name: Create Tag and Release with all assets
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ needs.check-version-tag.outputs.version }}
           name: ${{ needs.check-version-tag.outputs.version }}
-          body_path: ./release-notes/release.md
+          body_path: ./dist/release.md
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
           files: |
-            ./assets/${{ needs.check-version-tag.outputs.suffix }}.unitypackage
-            ./assets/tarball-${{ needs.check-version-tag.outputs.suffix }}.tgz
-            ./assets/installer-${{ needs.check-version-tag.outputs.suffix }}.unitypackage
+            ./dist/${{ needs.check-version-tag.outputs.suffix }}.unitypackage
+            ./dist/tarball-${{ needs.check-version-tag.outputs.suffix }}.tgz
+            ./dist/installer-${{ needs.check-version-tag.outputs.suffix }}.unitypackage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
