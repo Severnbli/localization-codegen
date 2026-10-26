@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.2] - 2026-10-26
+
+### Changed
+- Generated files import namespaces with ordinary `using` directives at the top of the file and refer to types by
+  their short names (`LocalizedTables.GetString(...)`, `LocalizedString`, `Sprite`, `Dictionary<string, object>`)
+  instead of `global::`-qualified names. A type stays `global::`-qualified only when its short name could bind to
+  another type (two asset types with the same name, a nested class from a key separator, or a type with that name
+  in the generated namespace or its parents).
+- Table classes no longer take the name of a type the generated code refers to (`Dictionary`, `UniTask`, an asset
+  type such as `Sprite`, …); such a class gets a `Table` suffix.
+
+### Removed
+- The **Use Runtime Alias** setting and the `using __LT = ...;` alias, which the regular `using` directives replace.
+
 ## [1.2.1] - 2026-10-24
 
 ### Added

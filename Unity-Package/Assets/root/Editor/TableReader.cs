@@ -140,7 +140,7 @@ namespace Severnbli.LocalizationCodegen.Editor
                     var type = ResolveAssetType(assetCollection, entry, ref assetTypeError);
                     if (type == null)
                     {
-                        modelEntry.AssetTypeName = "global::UnityEngine.Object";
+                        modelEntry.AssetTypeName = "UnityEngine.Object";
                         fallbackEntries++;
                         if (fallbackReason == null)
                             fallbackReason = assetTypeError ?? "the entry has no asset type";
@@ -148,14 +148,15 @@ namespace Severnbli.LocalizationCodegen.Editor
                     else if (!m_Options.GenerateAsmdef &&
                              !IsAssemblyReachableFromAssemblyCSharp(type.Assembly.GetName().Name))
                     {
-                        modelEntry.AssetTypeName = "global::UnityEngine.Object";
+                        modelEntry.AssetTypeName = "UnityEngine.Object";
                         fallbackEntries++;
                         if (fallbackReason == null)
                             fallbackReason = $"assembly '{type.Assembly.GetName().Name}' is not referenced by Assembly-CSharp";
                     }
                     else
                     {
-                        modelEntry.AssetTypeName = "global::" + type.FullName.Replace('+', '.');
+                        modelEntry.AssetTypeName = type.FullName.Replace('+', '.');
+                        modelEntry.AssetTypeNamespace = type.Namespace ?? "";
                         model.AssetAssemblies.Add(type.Assembly.GetName().Name);
                     }
                 }
@@ -569,7 +570,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             if (allPlural && formatters.Count > 0)
                 return "int";
             if (allList && formatters.Count > 0)
-                return "global::System.Collections.IEnumerable";
+                return "System.Collections.IEnumerable";
             return "object";
         }
 
