@@ -11,12 +11,25 @@ namespace Severnbli.LocalizationCodegen.Editor
     /// </summary>
     internal static class CodeEmitter
     {
-        const string AssetObject = "global::UnityEngine.Object";
-        const string LocalizedStringType = "global::UnityEngine.Localization.LocalizedString";
-        const string LocalizedAssetType = "global::UnityEngine.Localization.LocalizedAsset";
-        const string UniTaskType = "global::Cysharp.Threading.Tasks.UniTask";
-        const string CancellationTokenType = "global::System.Threading.CancellationToken";
+        const string AssetObject = "UnityEngine.Object";
+        const string LocalizedStringType = "UnityEngine.Localization.LocalizedString";
+        const string LocalizedAssetType = "UnityEngine.Localization.LocalizedAsset";
+        const string UniTaskType = "Cysharp.Threading.Tasks.UniTask";
+        const string CancellationTokenType = "System.Threading.CancellationToken";
+        const string DictionaryType = "System.Collections.Generic.Dictionary";
         const string CancellationTokenName = "cancellationToken";
+
+        /// <summary>
+        /// Simple names of every type the emitter itself can reference. Generated classes in the same namespace would
+        /// hide them, so table classes never take these names.
+        /// </summary>
+        static readonly string[] s_ReferencedTypeNames =
+        {
+            "LocalizedTables", "LocalizedTablesUniTask", "Object", "LocalizedString", "LocalizedAsset",
+            "LocalizedAudioClip", "LocalizedGameObject", "LocalizedMesh", "LocalizedMaterial", "LocalizedObject",
+            "LocalizedSprite", "LocalizedTexture", "LocalizedFont", "LocalizedTmpFont", "LocalizedTextCoreFontAsset",
+            "UniTask", "CancellationToken", "Dictionary", "IEnumerable"
+        };
 
         /// <summary>Assigns deterministic, collision-free class names to every model.</summary>
         public static void AssignClassNames(IList<TableModel> models, EmitOptions options)
@@ -26,11 +39,8 @@ namespace Severnbli.LocalizationCodegen.Editor
                 if (!model.IsAsset)
                     stringNames.Add(model.Name ?? "");
 
-            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "LocalizedTables" };
-            if (options.UseRuntimeAlias)
-                used.Add(options.RuntimeAlias ?? EmitOptions.DefaultRuntimeAlias);
-
-            var reserved = ReservedClassNames(options);
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "LocalizedTables", "LocalizedTablesUniTask" };
+            var reserved = ReservedClassNames(models, options);
             var ordered = models
                 .OrderBy(m => m.Name ?? "", StringComparer.Ordinal)
                 .ThenBy(m => m.IsAsset ? 1 : 0)
@@ -55,12 +65,26 @@ namespace Severnbli.LocalizationCodegen.Editor
             }
         }
 
-        static HashSet<string> ReservedClassNames(EmitOptions options)
+        static HashSet<string> ReservedClassNames(IList<TableModel> models, EmitOptions options)
         {
             var set = new HashSet<string>(StringComparer.Ordinal)
             {
-                "System", "UnityEngine", "UnityEditor", "Unity", "Microsoft", "Mono", "Severnbli"
+                "System", "UnityEngine", "UnityEditor", "Unity", "Microsoft", "Mono", "Severnbli", "Cysharp", "TMPro"
             };
+
+            // Generated files refer to types by their simple names, which a table class must not hide.
+            set.UnionWith(s_ReferencedTypeNames);
+            foreach (var model in models)
+            {
+                foreach (var entry in model.Entries)
+                {
+                    if (!string.IsNullOrEmpty(entry.AssetTypeName))
+                        set.Add(TypeNames.FirstSegment(TypeNames.SimpleName(entry.AssetTypeName, entry.AssetTypeNamespace)));
+                    foreach (var param in entry.Params)
+                        if (param.TypeName != null && param.TypeName.IndexOf('.') >= 0)
+                            set.Add(TypeNames.FirstSegment(TypeNames.SimpleName(param.TypeName, null)));
+                }
+            }
 
             var first = NamespaceUtil.FirstSegment(options.Namespace);
             if (!string.IsNullOrEmpty(first))
@@ -78,36 +102,50 @@ namespace Severnbli.LocalizationCodegen.Editor
                 ? CodegenText.ToIdentifier(model.Name)
                 : model.ClassName;
 
+            var root = BuildScopeTree(model, options);
+            root.ClassName = className;
+            AssignMemberNames(root, options);
+
+            var hasNamespace = !string.IsNullOrEmpty(options.Namespace);
+            var rootLevel = hasNamespace ? 1 : 0;
+
+            // The first pass only records which types the file refers to, so the second can pick their names.
+            var types = new TypeNames();
+            EmitScope(new StringBuilder(), root, model, options, types, rootLevel, true);
+            var declared = new HashSet<string>(StringComparer.Ordinal);
+            CollectClassNames(root, declared);
+            if (options.Refs)
+                declared.Add("Ref");
+            var usings = types.Resolve(options, declared);
+
             var sb = new StringBuilder();
             sb.Append(CodegenText.Marker).Append('\n');
             sb.Append("// Table collection: ").Append(CodegenText.SanitizeComment(model.Name)).Append('\n');
 
-            if (options.UseRuntimeAlias)
-            {
-                sb.Append("using ").Append(options.RuntimeAlias).Append(" = ")
-                  .Append(EmitOptions.RuntimeTypeName).Append(";\n");
-            }
+            foreach (var ns in usings)
+                sb.Append("using ").Append(ns).Append(";\n");
 
-            var hasNamespace = !string.IsNullOrEmpty(options.Namespace);
             if (hasNamespace)
             {
-                if (options.UseRuntimeAlias)
+                if (usings.Count > 0)
                     sb.Append('\n');
                 sb.Append("namespace ").Append(NamespaceUtil.Declaration(options.Namespace)).Append('\n');
                 sb.Append("{\n");
             }
 
-            var root = BuildScopeTree(model, options);
-            root.ClassName = className;
-            AssignMemberNames(root, options);
-
-            var rootLevel = hasNamespace ? 1 : 0;
-            EmitScope(sb, root, model, options, rootLevel, true);
+            EmitScope(sb, root, model, options, types, rootLevel, true);
 
             if (hasNamespace)
                 sb.Append("}\n");
 
             return sb.ToString();
+        }
+
+        static void CollectClassNames(Scope scope, HashSet<string> names)
+        {
+            names.Add(scope.ClassName.TrimStart('@'));
+            foreach (var child in scope.Children)
+                CollectClassNames(child, names);
         }
 
         sealed class Scope
@@ -177,13 +215,14 @@ namespace Severnbli.LocalizationCodegen.Editor
                 child.ClassName = CodegenText.Unique(baseName, childClassNames);
             }
 
-            // Members must not hide TableName, Ref, the runtime alias, object members, nested classes or the
+            // Members must not hide TableName, Ref, the runtime classes, object members, nested classes or the
             // enclosing type name.
             scope.MemberUsed.Clear();
             scope.MemberUsed.Add("TableName");
             scope.MemberUsed.Add("Ref");
-            if (options.UseRuntimeAlias)
-                scope.MemberUsed.Add(options.RuntimeAlias ?? EmitOptions.DefaultRuntimeAlias);
+            scope.MemberUsed.Add("LocalizedTables");
+            if (options.UniTask)
+                scope.MemberUsed.Add("LocalizedTablesUniTask");
             foreach (var name in CodegenText.ObjectMemberNames)
                 scope.MemberUsed.Add(name);
             foreach (var name in childClassNames)
@@ -238,7 +277,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             return CodegenText.ToIdentifier(key, strict);
         }
 
-        static void EmitScope(StringBuilder sb, Scope scope, TableModel model, EmitOptions options, int level, bool isRoot)
+        static void EmitScope(StringBuilder sb, Scope scope, TableModel model, EmitOptions options, TypeNames types, int level, bool isRoot)
         {
             sb.Append(Indent(level)).Append("public static class ").Append(scope.ClassName).Append('\n');
             sb.Append(Indent(level)).Append("{\n");
@@ -257,37 +296,37 @@ namespace Severnbli.LocalizationCodegen.Editor
             foreach (var entry in orderedEntries)
             {
                 sb.Append('\n');
-                EmitEntry(sb, entry, scope.MemberNames[entry], options, level + 1);
+                EmitEntry(sb, entry, scope.MemberNames[entry], options, types, level + 1);
 
                 string asyncName;
                 if (scope.AsyncMemberNames.TryGetValue(entry, out asyncName))
                 {
                     sb.Append('\n');
-                    EmitAsyncEntry(sb, entry, asyncName, options, level + 1);
+                    EmitAsyncEntry(sb, entry, asyncName, options, types, level + 1);
                 }
             }
 
             if (isRoot && options.Refs)
             {
                 sb.Append('\n');
-                EmitRefClass(sb, model, options, level + 1);
+                EmitRefClass(sb, model, options, types, level + 1);
             }
 
             foreach (var child in scope.Children.OrderBy(c => c.ClassName, StringComparer.Ordinal))
             {
                 sb.Append('\n');
-                EmitScope(sb, child, model, options, level + 1, false);
+                EmitScope(sb, child, model, options, types, level + 1, false);
             }
 
             sb.Append(Indent(level)).Append("}\n");
         }
 
-        static void EmitEntry(StringBuilder sb, EntryModel entry, string name, EmitOptions options, int level)
+        static void EmitEntry(StringBuilder sb, EntryModel entry, string name, EmitOptions options, TypeNames types, int level)
         {
             if (options.XmlDocs && !string.IsNullOrEmpty(entry.Preview))
                 EmitSummary(sb, entry.Preview, level);
 
-            var runtime = RuntimeType(options);
+            var runtime = types.Name(EmitOptions.RuntimeTypeName);
             if (!IsAssetEntry(entry))
             {
                 var positional = entry.Params.Where(p => p.IsPositional).OrderBy(p => p.Index).ToList();
@@ -297,9 +336,9 @@ namespace Severnbli.LocalizationCodegen.Editor
                 {
                     EmitParameterDocs(sb, positional, named, level);
                     sb.Append(Indent(level)).Append("public static string ").Append(name)
-                      .Append('(').Append(ParameterList(positional, named)).Append(")\n");
+                      .Append('(').Append(ParameterList(positional, named, types)).Append(")\n");
                     sb.Append(Indent(level)).Append("    => ").Append(runtime).Append('.')
-                      .Append(BuildStringCall(entry.Key, positional, named)).Append(";\n");
+                      .Append(BuildStringCall(entry.Key, positional, named, types)).Append(";\n");
                 }
                 else
                 {
@@ -310,7 +349,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             }
             else
             {
-                var type = string.IsNullOrEmpty(entry.AssetTypeName) ? AssetObject : entry.AssetTypeName;
+                var type = AssetType(entry, types);
                 sb.Append(Indent(level)).Append("public static ").Append(type).Append(' ').Append(name)
                   .Append(" => ").Append(runtime).Append(".GetAsset<").Append(type)
                   .Append(">(TableName, ").Append(CodegenText.Literal(entry.Key)).Append(");\n");
@@ -319,18 +358,27 @@ namespace Severnbli.LocalizationCodegen.Editor
 
         static bool IsAssetEntry(EntryModel entry) => entry.AssetTypeName != null;
 
+        static string AssetType(EntryModel entry, TypeNames types)
+        {
+            return string.IsNullOrEmpty(entry.AssetTypeName)
+                ? types.Name(AssetObject)
+                : types.Name(entry.AssetTypeName, entry.AssetTypeNamespace);
+        }
+
         /// <summary>Emits the UniTask variant of an entry, mirroring the parameters of its synchronous member.</summary>
-        static void EmitAsyncEntry(StringBuilder sb, EntryModel entry, string name, EmitOptions options, int level)
+        static void EmitAsyncEntry(StringBuilder sb, EntryModel entry, string name, EmitOptions options, TypeNames types, int level)
         {
             if (options.XmlDocs && !string.IsNullOrEmpty(entry.Preview))
                 EmitSummary(sb, entry.Preview, level);
 
-            var runtime = EmitOptions.UniTaskRuntimeTypeName;
+            var runtime = types.Name(EmitOptions.UniTaskRuntimeTypeName);
+            var uniTask = types.Name(UniTaskType);
+            var cancellationToken = types.Name(CancellationTokenType);
             if (IsAssetEntry(entry))
             {
-                var type = string.IsNullOrEmpty(entry.AssetTypeName) ? AssetObject : entry.AssetTypeName;
-                sb.Append(Indent(level)).Append("public static ").Append(UniTaskType).Append('<').Append(type).Append("> ")
-                  .Append(name).Append('(').Append(CancellationTokenType).Append(' ').Append(CancellationTokenName)
+                var type = AssetType(entry, types);
+                sb.Append(Indent(level)).Append("public static ").Append(uniTask).Append('<').Append(type).Append("> ")
+                  .Append(name).Append('(').Append(cancellationToken).Append(' ').Append(CancellationTokenName)
                   .Append(" = default)\n");
                 sb.Append(Indent(level)).Append("    => ").Append(runtime).Append(".GetAssetAsync<").Append(type)
                   .Append(">(TableName, ").Append(CodegenText.Literal(entry.Key)).Append(", ")
@@ -357,24 +405,24 @@ namespace Severnbli.LocalizationCodegen.Editor
                   .Append("\">Stops waiting for the table to load.</param>\n");
             }
 
-            var parameters = ParameterList(positional, named);
-            sb.Append(Indent(level)).Append("public static ").Append(UniTaskType).Append("<string> ").Append(name).Append('(')
+            var parameters = ParameterList(positional, named, types);
+            sb.Append(Indent(level)).Append("public static ").Append(uniTask).Append("<string> ").Append(name).Append('(')
               .Append(parameters).Append(parameters.Length > 0 ? ", " : "")
-              .Append(CancellationTokenType).Append(' ').Append(tokenName).Append(" = default)\n");
+              .Append(cancellationToken).Append(' ').Append(tokenName).Append(" = default)\n");
             sb.Append(Indent(level)).Append("    => ").Append(runtime).Append(".GetStringAsync(TableName, ")
               .Append(CodegenText.Literal(entry.Key)).Append(", ");
             if (withParams)
-                sb.Append(PositionalArray(positional)).Append(", ").Append(NamedDictionary(named)).Append(", ");
+                sb.Append(PositionalArray(positional)).Append(", ").Append(NamedDictionary(named, types)).Append(", ");
             sb.Append(tokenName).Append(");\n");
         }
 
-        static void EmitRefClass(StringBuilder sb, TableModel model, EmitOptions options, int level)
+        static void EmitRefClass(StringBuilder sb, TableModel model, EmitOptions options, TypeNames types, int level)
         {
             var strict = !string.IsNullOrEmpty(options.KeySeparators);
             sb.Append(Indent(level)).Append("public static class Ref\n");
             sb.Append(Indent(level)).Append("{\n");
 
-            var used = new HashSet<string>(StringComparer.Ordinal) { "TableName", "Ref" };
+            var used = new HashSet<string>(StringComparer.Ordinal) { "TableName", "Ref", "LocalizedTables" };
             foreach (var objectMember in CodegenText.ObjectMemberNames)
                 used.Add(objectMember);
 
@@ -400,17 +448,18 @@ namespace Severnbli.LocalizationCodegen.Editor
                     if (entry.Params.Count > 0 && options.SmartStrings == SmartStringMode.MethodsAndRefs)
                     {
                         EmitParameterDocs(sb, positional, named, level + 1);
-                        sb.Append(Indent(level + 1)).Append("public static ").Append(LocalizedStringType).Append(' ')
-                          .Append(name).Append('(').Append(ParameterList(positional, named)).Append(")\n");
-                        sb.Append(Indent(level + 1)).Append("    => ").Append(RuntimeType(options))
+                        sb.Append(Indent(level + 1)).Append("public static ").Append(types.Name(LocalizedStringType)).Append(' ')
+                          .Append(name).Append('(').Append(ParameterList(positional, named, types)).Append(")\n");
+                        sb.Append(Indent(level + 1)).Append("    => ").Append(types.Name(EmitOptions.RuntimeTypeName))
                           .Append(".CreateReference(TableName, ").Append(CodegenText.Literal(entry.Key))
                           .Append(", ").Append(PositionalArray(positional)).Append(", ")
-                          .Append(NamedDictionary(named)).Append(");\n");
+                          .Append(NamedDictionary(named, types)).Append(");\n");
                     }
                     else if (entry.Params.Count == 0)
                     {
-                        sb.Append(Indent(level + 1)).Append("public static ").Append(LocalizedStringType).Append(' ')
-                          .Append(name).Append(" => new ").Append(LocalizedStringType)
+                        var localizedString = types.Name(LocalizedStringType);
+                        sb.Append(Indent(level + 1)).Append("public static ").Append(localizedString).Append(' ')
+                          .Append(name).Append(" => new ").Append(localizedString)
                           .Append("(TableName, ").Append(CodegenText.Literal(entry.Key)).Append(");\n");
                     }
                     else
@@ -422,9 +471,9 @@ namespace Severnbli.LocalizationCodegen.Editor
                 else
                 {
                     // Unlike LocalizedString, LocalizedAsset types only have a parameterless constructor.
-                    var type = string.IsNullOrEmpty(entry.AssetTypeName) ? AssetObject : entry.AssetTypeName;
-                    sb.Append(Indent(level + 1)).Append("public static ").Append(GetLocalizedAssetType(type)).Append(' ')
-                      .Append(name).Append(" => new ").Append(GetLocalizedAssetType(type))
+                    var type = GetLocalizedAssetType(entry, types);
+                    sb.Append(Indent(level + 1)).Append("public static ").Append(type).Append(' ')
+                      .Append(name).Append(" => new ").Append(type)
                       .Append(" { TableReference = TableName, TableEntryReference = ")
                       .Append(CodegenText.Literal(entry.Key)).Append(" };\n");
                 }
@@ -433,42 +482,44 @@ namespace Severnbli.LocalizationCodegen.Editor
             sb.Append(Indent(level)).Append("}\n");
         }
 
-        static string GetLocalizedAssetType(string assetType)
+        static string GetLocalizedAssetType(EntryModel entry, TypeNames types)
         {
-            switch (assetType)
+            string localized;
+            switch (string.IsNullOrEmpty(entry.AssetTypeName) ? AssetObject : entry.AssetTypeName)
             {
-                case "global::UnityEngine.AudioClip": return "global::UnityEngine.Localization.LocalizedAudioClip";
-                case "global::UnityEngine.GameObject": return "global::UnityEngine.Localization.LocalizedGameObject";
-                case "global::UnityEngine.Mesh": return "global::UnityEngine.Localization.LocalizedMesh";
-                case "global::UnityEngine.Material": return "global::UnityEngine.Localization.LocalizedMaterial";
-                case "global::UnityEngine.Object": return "global::UnityEngine.Localization.LocalizedObject";
-                case "global::UnityEngine.Sprite": return "global::UnityEngine.Localization.LocalizedSprite";
-                case "global::UnityEngine.Texture": return "global::UnityEngine.Localization.LocalizedTexture";
-                case "global::UnityEngine.Font": return "global::UnityEngine.Localization.LocalizedFont";
-                case "global::TMPro.TMP_FontAsset": return "global::UnityEngine.Localization.LocalizedTmpFont";
-                case "global::UnityEngine.TextCore.Text.FontAsset": return "global::UnityEngine.Localization.LocalizedTextCoreFontAsset";
-                default: return LocalizedAssetType + "<" + assetType + ">";
+                case "UnityEngine.AudioClip": localized = "UnityEngine.Localization.LocalizedAudioClip"; break;
+                case "UnityEngine.GameObject": localized = "UnityEngine.Localization.LocalizedGameObject"; break;
+                case "UnityEngine.Mesh": localized = "UnityEngine.Localization.LocalizedMesh"; break;
+                case "UnityEngine.Material": localized = "UnityEngine.Localization.LocalizedMaterial"; break;
+                case "UnityEngine.Object": localized = "UnityEngine.Localization.LocalizedObject"; break;
+                case "UnityEngine.Sprite": localized = "UnityEngine.Localization.LocalizedSprite"; break;
+                case "UnityEngine.Texture": localized = "UnityEngine.Localization.LocalizedTexture"; break;
+                case "UnityEngine.Font": localized = "UnityEngine.Localization.LocalizedFont"; break;
+                case "TMPro.TMP_FontAsset": localized = "UnityEngine.Localization.LocalizedTmpFont"; break;
+                case "UnityEngine.TextCore.Text.FontAsset": localized = "UnityEngine.Localization.LocalizedTextCoreFontAsset"; break;
+                default: return types.Name(LocalizedAssetType) + "<" + AssetType(entry, types) + ">";
             }
+            return types.Name(localized);
         }
 
-        static string ParameterList(List<SmartParam> positional, List<SmartParam> named)
+        static string ParameterList(List<SmartParam> positional, List<SmartParam> named, TypeNames types)
         {
             var parts = new List<string>();
             foreach (var p in positional)
-                parts.Add(p.TypeName + " " + p.ClrName);
+                parts.Add(types.Name(p.TypeName) + " " + p.ClrName);
             foreach (var p in named)
-                parts.Add(p.TypeName + " " + p.ClrName);
+                parts.Add(types.Name(p.TypeName) + " " + p.ClrName);
             return string.Join(", ", parts.ToArray());
         }
 
-        static string BuildStringCall(string key, List<SmartParam> positional, List<SmartParam> named)
+        static string BuildStringCall(string key, List<SmartParam> positional, List<SmartParam> named, TypeNames types)
         {
             var keyLiteral = CodegenText.Literal(key);
             if (positional.Count == 0 && named.Count == 0)
                 return "GetString(TableName, " + keyLiteral + ")";
 
             if (positional.Count == 0)
-                return "GetString(TableName, " + keyLiteral + ", " + NamedDictionary(named) + ")";
+                return "GetString(TableName, " + keyLiteral + ", " + NamedDictionary(named, types) + ")";
 
             if (named.Count == 0)
             {
@@ -477,7 +528,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             }
 
             return "GetStringMixed(TableName, " + keyLiteral + ", " +
-                   PositionalArray(positional) + ", " + NamedDictionary(named) + ")";
+                   PositionalArray(positional) + ", " + NamedDictionary(named, types) + ")";
         }
 
         static string PositionalArray(List<SmartParam> positional)
@@ -488,13 +539,13 @@ namespace Severnbli.LocalizationCodegen.Editor
             return "new object[] { " + args + " }";
         }
 
-        static string NamedDictionary(List<SmartParam> named)
+        static string NamedDictionary(List<SmartParam> named, TypeNames types)
         {
             if (named.Count == 0)
                 return "null";
 
             var sb = new StringBuilder();
-            sb.Append("new global::System.Collections.Generic.Dictionary<string, object> { ");
+            sb.Append("new ").Append(types.Name(DictionaryType)).Append("<string, object> { ");
             for (var i = 0; i < named.Count; i++)
             {
                 if (i > 0)
@@ -524,11 +575,109 @@ namespace Severnbli.LocalizationCodegen.Editor
             sb.Append(Indent(level)).Append("/// <summary>").Append(text).Append("</summary>\n");
         }
 
-        static string RuntimeType(EmitOptions options)
-        {
-            return options.UseRuntimeAlias ? options.RuntimeAlias : EmitOptions.RuntimeTypeName;
-        }
-
         static string Indent(int level) => new string(' ', level * 4);
+
+        /// <summary>
+        /// Decides how one file writes the types it refers to. A type is written by its simple name and its namespace
+        /// is imported with a using directive, unless that name could bind to another type; then it stays
+        /// <c>global::</c> qualified.
+        /// </summary>
+        internal sealed class TypeNames
+        {
+            // Full name -> namespace of every type the file refers to.
+            readonly Dictionary<string, string> m_Namespaces = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            // Full name -> written name; null while recording.
+            Dictionary<string, string> m_Written;
+
+            /// <summary>
+            /// Returns the name to write for a type. <paramref name="ns"/> is the type's namespace; when null it is
+            /// everything before the last dot. Names without a dot and namespace (keywords such as object) pass through.
+            /// </summary>
+            public string Name(string fullName, string ns = null)
+            {
+                if (ns == null)
+                {
+                    var dot = fullName.LastIndexOf('.');
+                    if (dot < 0)
+                        return fullName;
+                    ns = fullName.Substring(0, dot);
+                }
+
+                if (m_Written == null)
+                {
+                    m_Namespaces[fullName] = ns;
+                    return fullName;
+                }
+                return m_Written[fullName];
+            }
+
+            /// <summary>
+            /// Picks the written name of every recorded type and returns the namespaces to import, sorted with System
+            /// namespaces first. <paramref name="declared"/> holds the type names the file itself declares.
+            /// </summary>
+            public List<string> Resolve(EmitOptions options, HashSet<string> declared)
+            {
+                // Namespaces whose types a simple name can bind to: the generated namespace, its parents and the imports.
+                var enclosing = new List<string> { "" };
+                if (!string.IsNullOrEmpty(options.Namespace))
+                {
+                    var segments = options.Namespace.Split('.').Select(s => s.TrimStart('@')).ToArray();
+                    for (var i = 1; i <= segments.Length; i++)
+                        enclosing.Add(string.Join(".", segments, 0, i));
+                    // A simple name that matches a segment of the generated namespace binds to that namespace.
+                    declared = new HashSet<string>(declared, StringComparer.Ordinal);
+                    declared.UnionWith(segments);
+                }
+
+                var lookup = new HashSet<string>(enclosing, StringComparer.Ordinal);
+                lookup.UnionWith(m_Namespaces.Values);
+
+                m_Written = new Dictionary<string, string>(StringComparer.Ordinal);
+                var usings = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var pair in m_Namespaces)
+                {
+                    var ns = pair.Value;
+                    var simple = SimpleName(pair.Key, ns);
+                    var first = FirstSegment(simple);
+
+                    var conflict = declared.Contains(first) ||
+                                   m_Namespaces.Any(o => o.Value != ns && FirstSegment(SimpleName(o.Key, o.Value)) == first) ||
+                                   (options.TypeExists != null && lookup.Any(n => n != ns && options.TypeExists(n, first)));
+
+                    if (conflict)
+                    {
+                        m_Written[pair.Key] = "global::" + pair.Key;
+                        continue;
+                    }
+
+                    m_Written[pair.Key] = simple;
+                    if (!enclosing.Contains(ns))
+                        usings.Add(ns);
+                }
+
+                return usings
+                    .OrderBy(n => n == "System" || n.StartsWith("System.", StringComparison.Ordinal) ? 0 : 1)
+                    .ThenBy(n => n, StringComparer.Ordinal)
+                    .ToList();
+            }
+
+            /// <summary>The name of a type relative to its namespace, e.g. <c>Outer.Inner</c> for a nested type.</summary>
+            public static string SimpleName(string fullName, string ns)
+            {
+                if (ns == null)
+                {
+                    var dot = fullName.LastIndexOf('.');
+                    return dot < 0 ? fullName : fullName.Substring(dot + 1);
+                }
+                return ns.Length == 0 ? fullName : fullName.Substring(ns.Length + 1);
+            }
+
+            public static string FirstSegment(string simpleName)
+            {
+                var dot = simpleName.IndexOf('.');
+                return dot < 0 ? simpleName : simpleName.Substring(0, dot);
+            }
+        }
     }
 }

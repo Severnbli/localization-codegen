@@ -282,7 +282,6 @@ namespace Severnbli.LocalizationCodegen.Editor
             return new EmitOptions
             {
                 Namespace = NamespaceUtil.Normalize(settings.Namespace),
-                UseRuntimeAlias = settings.UseRuntimeAlias,
                 Refs = settings.GenerateReferences || smart == SmartStringMode.MethodsAndRefs,
                 XmlDocs = settings.GenerateXmlDocs,
                 SmartStrings = smart,
@@ -291,8 +290,51 @@ namespace Severnbli.LocalizationCodegen.Editor
                 SmartParamTypes = settings.SmartParamTypes,
                 GenerateAsmdef = settings.GenerateAsmdef,
                 // Generated code must compile, so the option only takes effect when the add-on is compiled.
-                UniTask = settings.GenerateUniTask && UniTaskSupport.IsAvailable
+                UniTask = settings.GenerateUniTask && UniTaskSupport.IsAvailable,
+                TypeExists = LoadedTypeExists
             };
+        }
+
+        static HashSet<string> s_LoadedTypes;
+
+        /// <summary>
+        /// True when a loaded assembly has a public top-level type with this simple name (any generic arity) in the
+        /// namespace. Domain reloads reset the cache, so it always reflects the compiled project.
+        /// </summary>
+        static bool LoadedTypeExists(string ns, string name)
+        {
+            if (s_LoadedTypes == null)
+            {
+                var types = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (assembly.IsDynamic)
+                        continue;
+
+                    Type[] exported;
+                    try
+                    {
+                        exported = assembly.GetExportedTypes();
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    foreach (var type in exported)
+                    {
+                        if (type.IsNested)
+                            continue;
+                        var simple = type.Name;
+                        var tick = simple.IndexOf('`');
+                        if (tick >= 0)
+                            simple = simple.Substring(0, tick);
+                        types.Add((type.Namespace ?? "") + "|" + simple);
+                    }
+                }
+                s_LoadedTypes = types;
+            }
+            return s_LoadedTypes.Contains(ns + "|" + name);
         }
 
         /// <summary>Warns when the output folder compiles into an asmdef that lacks the references the code needs.</summary>

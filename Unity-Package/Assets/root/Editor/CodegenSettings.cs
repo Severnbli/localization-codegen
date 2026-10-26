@@ -28,7 +28,6 @@ namespace Severnbli.LocalizationCodegen.Editor
         [SerializeField] private string[] collectionHashes = new string[0];
 
         // Options introduced in 1.1.0. Defaults are intentionally "old output" and are migrated explicitly.
-        [SerializeField] private bool useRuntimeAlias;
         [SerializeField] private bool generateReferences;
         [SerializeField] private bool generateXmlDocs;
         [SerializeField] private int smartStrings;
@@ -54,7 +53,6 @@ namespace Severnbli.LocalizationCodegen.Editor
         public string LastModelHash { get => lastModelHash; set => lastModelHash = value; }
         public string[] CollectionHashes { get => collectionHashes ?? (collectionHashes = new string[0]); set => collectionHashes = value; }
 
-        public bool UseRuntimeAlias { get => useRuntimeAlias; set => useRuntimeAlias = value; }
         public bool GenerateReferences { get => generateReferences; set => generateReferences = value; }
         public bool GenerateXmlDocs { get => generateXmlDocs; set => generateXmlDocs = value; }
         public bool GenerateAsmdef { get => generateAsmdef; set => generateAsmdef = value; }
@@ -87,10 +85,7 @@ namespace Severnbli.LocalizationCodegen.Editor
 
         public int SettingsVersion { get => settingsVersion; set => settingsVersion = value; }
 
-        /// <summary>
-        /// Upgrades settings created by older versions. Missing boolean fields deserialize as false, so the alias
-        /// option (which is safe to enable for existing projects) is turned on explicitly.
-        /// </summary>
+        /// <summary>Upgrades settings created by older versions.</summary>
         public void EnsureMigrated()
         {
             if (settingsVersion >= CurrentVersion)
@@ -98,7 +93,6 @@ namespace Severnbli.LocalizationCodegen.Editor
 
             if (settingsVersion < 2)
             {
-                useRuntimeAlias = true;
                 if (generatedPaths == null)
                     generatedPaths = new string[0];
                 if (collectionHashes == null)

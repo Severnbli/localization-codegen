@@ -154,7 +154,6 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
                 Options = new EmitOptions
                 {
                     Namespace = "CompileCheck.Full",
-                    UseRuntimeAlias = true,
                     Refs = true,
                     XmlDocs = true,
                     SmartStrings = SmartStringMode.MethodsAndRefs,
@@ -164,14 +163,13 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
                 }
             };
 
-            // PascalCase names in the global namespace without the alias.
+            // PascalCase names in the global namespace.
             yield return new Variant
             {
                 Name = "Global",
                 Options = new EmitOptions
                 {
                     Namespace = null,
-                    UseRuntimeAlias = false,
                     Refs = true,
                     XmlDocs = true,
                     SmartStrings = SmartStringMode.Methods,
@@ -180,11 +178,11 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
                 }
             };
 
-            // The 1.0 output.
+            // Default options.
             yield return new Variant
             {
                 Name = "Legacy",
-                Options = new EmitOptions { Namespace = "CompileCheck.Legacy", UseRuntimeAlias = false, UniTask = uniTask }
+                Options = new EmitOptions { Namespace = "CompileCheck.Legacy", UniTask = uniTask }
             };
         }
 
@@ -214,17 +212,19 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             mixed.Params.Add(new SmartParam { IsPositional = true, Index = 0, SourceName = "0", ClrName = "arg0", TypeName = "object" });
             mixed.Params.Add(new SmartParam
             {
-                SourceName = "items", ClrName = "items", TypeName = "global::System.Collections.IEnumerable", FormatterName = "list"
+                SourceName = "items", ClrName = "items", TypeName = "System.Collections.IEnumerable", FormatterName = "list"
             });
             strings.Entries.Add(mixed);
 
             var assets = new TableModel { Name = "Ui", IsAsset = true };
-            assets.Entries.Add(new EntryModel { Id = 1, Key = "Logo", AssetTypeName = "global::UnityEngine.Sprite" });
-            assets.Entries.Add(new EntryModel { Id = 2, Key = "Theme", AssetTypeName = "global::UnityEngine.AudioClip" });
-            assets.Entries.Add(new EntryModel { Id = 3, Key = "Anything", AssetTypeName = "global::UnityEngine.Object" });
-            assets.Entries.Add(new EntryModel { Id = 4, Key = "Mesh", AssetTypeName = "global::UnityEngine.Mesh" });
+            assets.Entries.Add(new EntryModel { Id = 1, Key = "Logo", AssetTypeName = "UnityEngine.Sprite" });
+            assets.Entries.Add(new EntryModel { Id = 2, Key = "Theme", AssetTypeName = "UnityEngine.AudioClip" });
+            assets.Entries.Add(new EntryModel { Id = 3, Key = "Anything", AssetTypeName = "UnityEngine.Object" });
+            assets.Entries.Add(new EntryModel { Id = 4, Key = "Mesh", AssetTypeName = "UnityEngine.Mesh" });
             // No dedicated Localized* type: uses the generic LocalizedAsset<T>.
-            assets.Entries.Add(new EntryModel { Id = 5, Key = "Background", AssetTypeName = "global::UnityEngine.Texture2D" });
+            assets.Entries.Add(new EntryModel { Id = 5, Key = "Background", AssetTypeName = "UnityEngine.Texture2D" });
+            // With key separators this creates a nested class Sprite, so the asset type must stay qualified.
+            assets.Entries.Add(new EntryModel { Id = 6, Key = "Sprite/Icon", AssetTypeName = "UnityEngine.Sprite" });
 
             return new List<TableModel> { strings, assets };
         }

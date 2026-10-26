@@ -48,8 +48,6 @@ namespace Severnbli.LocalizationCodegen.Editor
                 "Keep preserves the 1.0 names. PascalCase turns 'player name' into 'PlayerName'.");
             public static readonly GUIContent KeySeparators = new GUIContent("Key Separators",
                 "Optional characters that create nested classes, e.g. '/' makes 'Menu/Start' become Menu.Start.");
-            public static readonly GUIContent RuntimeAlias = new GUIContent("Use Runtime Alias",
-                "Reference the runtime helper through one file-level alias (__LT) instead of repeating the fully qualified name on every member.");
 
             public static readonly GUIContent GenerateAsmdef = new GUIContent("Generate .asmdef",
                 "Write an assembly definition into the output folder, so the generated code gets its own assembly.");
@@ -339,7 +337,6 @@ namespace Severnbli.LocalizationCodegen.Editor
         {
             s.Naming = (NamingConvention)EditorGUILayout.EnumPopup(Content.Naming, s.Naming);
             s.KeySeparators = EditorGUILayout.TextField(Content.KeySeparators, s.KeySeparators);
-            s.UseRuntimeAlias = EditorGUILayout.Toggle(Content.RuntimeAlias, s.UseRuntimeAlias);
         }
 
         static void DrawAdvanced(CodegenSettings s)

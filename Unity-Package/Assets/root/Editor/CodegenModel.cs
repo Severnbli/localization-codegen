@@ -40,7 +40,11 @@ namespace Severnbli.LocalizationCodegen.Editor
     {
         public long Id;
         public string Key;
+        /// <summary>Full name of the asset type without <c>global::</c>, e.g. <c>UnityEngine.Sprite</c>.</summary>
         public string AssetTypeName;
+
+        /// <summary>Namespace of <see cref="AssetTypeName"/>; when null, everything before its last dot.</summary>
+        public string AssetTypeNamespace;
         public string Preview;
         public readonly List<SmartParam> Params = new List<SmartParam>();
         public readonly List<SmartVariableUsage> Usages = new List<SmartVariableUsage>();
@@ -72,15 +76,12 @@ namespace Severnbli.LocalizationCodegen.Editor
     /// <summary>Options controlling the pure emitter.</summary>
     internal sealed class EmitOptions
     {
-        public const string DefaultRuntimeAlias = "__LT";
-        public const string RuntimeTypeName = "global::Severnbli.LocalizationCodegen.LocalizedTables";
-        public const string UniTaskRuntimeTypeName = "global::Severnbli.LocalizationCodegen.LocalizedTablesUniTask";
+        public const string RuntimeTypeName = "Severnbli.LocalizationCodegen.LocalizedTables";
+        public const string UniTaskRuntimeTypeName = "Severnbli.LocalizationCodegen.LocalizedTablesUniTask";
 
         /// <summary>Normalized namespace, or <see langword="null"/> for the global namespace.</summary>
         public string Namespace;
 
-        public bool UseRuntimeAlias = true;
-        public string RuntimeAlias = DefaultRuntimeAlias;
         public bool Refs;
         public bool XmlDocs;
         public SmartStringMode SmartStrings = SmartStringMode.Off;
@@ -94,6 +95,12 @@ namespace Severnbli.LocalizationCodegen.Editor
         /// <summary>When true, every member also gets a UniTask-returning <c>...Async</c> variant.</summary>
         public bool UniTask;
 
+        /// <summary>
+        /// Optional check whether a namespace (empty for the global namespace) contains a type with the given simple
+        /// name. Generated files keep a type <c>global::</c> qualified when its simple name could bind to another type.
+        /// </summary>
+        public Func<string, string, bool> TypeExists;
+
         /// <summary>Stable signature of every option that can change output.</summary>
         public string Signature()
         {
@@ -101,8 +108,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             return (UniTask ? "unitask|" : "") + string.Join("|", new[]
             {
                 Namespace ?? "<global>",
-                UseRuntimeAlias ? "alias" : "noalias",
-                RuntimeAlias ?? DefaultRuntimeAlias,
+                "usings",
                 RuntimeTypeName,
                 Refs ? "refs" : "norefs",
                 XmlDocs ? "docs" : "nodocs",

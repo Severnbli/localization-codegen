@@ -24,7 +24,6 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
         bool m_AutoRegenerate;
         bool m_GenerateStringTables;
         bool m_GenerateAssetTables;
-        bool m_UseRuntimeAlias;
         SmartStringMode m_SmartStrings;
         bool m_GenerateUniTask;
         string m_LastOutputFolder;
@@ -43,7 +42,6 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_AutoRegenerate = m_Settings.AutoRegenerate;
             m_GenerateStringTables = m_Settings.GenerateStringTables;
             m_GenerateAssetTables = m_Settings.GenerateAssetTables;
-            m_UseRuntimeAlias = m_Settings.UseRuntimeAlias;
             m_SmartStrings = m_Settings.SmartStrings;
             m_GenerateUniTask = m_Settings.GenerateUniTask;
             m_LastOutputFolder = m_Settings.LastOutputFolder;
@@ -67,7 +65,6 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_Settings.AutoRegenerate = false;
             m_Settings.GenerateStringTables = true;
             m_Settings.GenerateAssetTables = false;
-            m_Settings.UseRuntimeAlias = false;
             m_Settings.SmartStrings = SmartStringMode.Off;
             m_Settings.GenerateUniTask = false;
             m_Settings.Namespace = "CodegenIntegrationTests";
@@ -85,7 +82,6 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_Settings.AutoRegenerate = m_AutoRegenerate;
             m_Settings.GenerateStringTables = m_GenerateStringTables;
             m_Settings.GenerateAssetTables = m_GenerateAssetTables;
-            m_Settings.UseRuntimeAlias = m_UseRuntimeAlias;
             m_Settings.SmartStrings = m_SmartStrings;
             m_Settings.GenerateUniTask = m_GenerateUniTask;
             m_Settings.LastOutputFolder = m_LastOutputFolder;
