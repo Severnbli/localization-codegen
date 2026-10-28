@@ -114,7 +114,7 @@ namespace Severnbli.LocalizationCodegen.Editor
         }
 
         /// <summary>Accepts <c>count</c>, <c>0</c> and <c>{0}</c>.</summary>
-        static string NormalizeName(string name)
+        internal static string NormalizeName(string name)
         {
             return (name ?? "").Trim().TrimStart('{').TrimEnd('}').Trim();
         }
@@ -130,11 +130,11 @@ namespace Severnbli.LocalizationCodegen.Editor
                 .ToList();
         }
 
-        static bool IsPlural(string formatter) =>
+        internal static bool IsPlural(string formatter) =>
             string.Equals(formatter, "plural", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(formatter, "p", StringComparison.OrdinalIgnoreCase);
 
-        static bool IsList(string formatter) =>
+        internal static bool IsList(string formatter) =>
             string.Equals(formatter, "list", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(formatter, "l", StringComparison.OrdinalIgnoreCase);
     }
