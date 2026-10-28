@@ -166,6 +166,20 @@ namespace Severnbli.LocalizationCodegen
         }
 
         /// <summary>
+        /// Loads an asset table and the assets of all its entries for the selected locale without blocking, so later
+        /// lookups do not wait. A table whose Preload Asset Table metadata is No Preload loads without its assets.
+        /// Completes with <see langword="null"/> when Localization is not configured.
+        /// </summary>
+        public static async Task<AssetTable> LoadAssetTableEntries(string table)
+        {
+            if (!HasSettings())
+                return null;
+
+            await ToTask(LocalizationSettings.AssetDatabase.PreloadTables(table));
+            return await LoadAssetTable(table);
+        }
+
+        /// <summary>
         /// Awaits a Localization operation through its completion callback, which also works on WebGL. The result is
         /// read inside the callback because Localization may release the operation right after it completes.
         /// </summary>
@@ -180,10 +194,32 @@ namespace Severnbli.LocalizationCodegen
                 if (completed.Status == AsyncOperationStatus.Succeeded)
                     source.TrySetResult(completed.Result);
                 else
-                    source.TrySetException(completed.OperationException ?? new System.InvalidOperationException(
-                        "The localization operation failed with status " + completed.Status + "."));
+                    source.TrySetException(Failure(completed.Status, completed.OperationException));
             };
             return source.Task;
+        }
+
+        /// <summary>Untyped variant of <see cref="ToTask{T}(AsyncOperationHandle{T})"/>.</summary>
+        static Task ToTask(AsyncOperationHandle handle)
+        {
+            if (!handle.IsValid())
+                return Task.FromException(new System.InvalidOperationException("The localization operation is not valid."));
+
+            var source = new TaskCompletionSource<bool>();
+            handle.Completed += completed =>
+            {
+                if (completed.Status == AsyncOperationStatus.Succeeded)
+                    source.TrySetResult(true);
+                else
+                    source.TrySetException(Failure(completed.Status, completed.OperationException));
+            };
+            return source.Task;
+        }
+
+        static System.Exception Failure(AsyncOperationStatus status, System.Exception exception)
+        {
+            return exception ?? new System.InvalidOperationException(
+                "The localization operation failed with status " + status + ".");
         }
 
         static object[] ToArray(IList<object> values)

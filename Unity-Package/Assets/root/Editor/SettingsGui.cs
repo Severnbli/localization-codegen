@@ -43,7 +43,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             public static readonly GUIContent UniTask = new GUIContent("UniTask Members",
                 "Also emit ...Async members that return UniTask and accept a CancellationToken. Requires UniTask (com.cysharp.unitask).");
             public static readonly GUIContent LoadTable = new GUIContent("Load Table Method",
-                "Emit LoadTable() on every table class to load the table without blocking (and LoadTableAsync with UniTask Members).");
+                "Emit LoadTable() on every table class and LoadEntries() on asset table classes to load without blocking (and ...Async variants with UniTask Members).");
             public static readonly GUIContent XmlDocs = new GUIContent("XML Documentation",
                 "Emit XML doc comments containing the default locale text.");
 

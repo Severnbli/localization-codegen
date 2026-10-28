@@ -5,9 +5,10 @@
 ### Added
 - **Load Table Method**: every table class gets `LoadTable()`, which loads the table for the selected locale
   without blocking and returns `Task<StringTable>` / `Task<AssetTable>`. With **UniTask Members** there is also
-  `LoadTableAsync(CancellationToken)`. Off by default; turning it on never renames existing members.
-- `LocalizedTables.LoadStringTable` / `LoadAssetTable` and `LocalizedTablesUniTask.LoadStringTableAsync` /
-  `LoadAssetTableAsync`.
+  `LoadTableAsync(CancellationToken)`. Asset table classes also get `LoadEntries()` / `LoadEntriesAsync`, which
+  load the table and the assets of all its entries. Off by default; turning it on never renames existing members.
+- `LocalizedTables.LoadStringTable` / `LoadAssetTable` / `LoadAssetTableEntries` and
+  `LocalizedTablesUniTask.LoadStringTableAsync` / `LoadAssetTableAsync` / `LoadAssetTableEntriesAsync`.
 
 ## [1.3.0] - 2026-10-28
 

@@ -625,6 +625,45 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
 
             StringAssert.Contains(
                 "public static Task<AssetTable> LoadTable() => LocalizedTables.LoadAssetTable(TableName);\n", output);
+            StringAssert.Contains(
+                "public static Task<AssetTable> LoadEntries() => LocalizedTables.LoadAssetTableEntries(TableName);\n",
+                output);
+        }
+
+        [Test]
+        public void LoadEntries_OnlyOnAssetTables()
+        {
+            var model = Model("Ui", false, (1L, "Title"));
+            var options = LoadTableOptions(uniTask: true);
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+
+            StringAssert.DoesNotContain("LoadEntries", CodeEmitter.Emit(model, options));
+        }
+
+        [Test]
+        public void LoadEntries_WithUniTask_EmitsAsyncVariant()
+        {
+            var model = Model("Ui", true, (1L, "Logo"));
+            var options = LoadTableOptions(uniTask: true);
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(
+                "        public static UniTask<AssetTable> LoadEntriesAsync(CancellationToken cancellationToken = default)\n" +
+                "            => LocalizedTablesUniTask.LoadAssetTableEntriesAsync(TableName, cancellationToken);\n",
+                output);
+        }
+
+        [Test]
+        public void LoadEntries_DoesNotRenameAKeyWithTheSameName()
+        {
+            var model = Model("Ui", true, (1L, "LoadEntries"));
+            var options = LoadTableOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(" LoadEntries => LocalizedTables.GetAsset<", output);
+            StringAssert.Contains("public static Task<AssetTable> LoadEntries_2()", output);
         }
 
         [Test]

@@ -121,8 +121,14 @@ namespace Severnbli.LocalizationCodegen.Editor
             if (options.LoadTable)
             {
                 root.LoadTableName = CodegenText.Unique("LoadTable", root.MemberUsed);
+                if (model.IsAsset)
+                    root.LoadEntriesName = CodegenText.Unique("LoadEntries", root.MemberUsed);
                 if (options.UniTask)
+                {
                     root.LoadTableAsyncName = CodegenText.Unique("LoadTableAsync", root.MemberUsed);
+                    if (model.IsAsset)
+                        root.LoadEntriesAsyncName = CodegenText.Unique("LoadEntriesAsync", root.MemberUsed);
+                }
             }
 
             var hasNamespace = !string.IsNullOrEmpty(options.Namespace);
@@ -180,6 +186,8 @@ namespace Severnbli.LocalizationCodegen.Editor
             public readonly HashSet<string> MemberUsed = new HashSet<string>(StringComparer.Ordinal);
             public string LoadTableName;
             public string LoadTableAsyncName;
+            public string LoadEntriesName;
+            public string LoadEntriesAsyncName;
         }
 
         static Scope BuildScopeTree(TableModel model, EmitOptions options)
@@ -440,30 +448,50 @@ namespace Severnbli.LocalizationCodegen.Editor
             sb.Append(tokenName).Append(");\n");
         }
 
-        /// <summary>Emits <c>LoadTable</c> and, with UniTask, <c>LoadTableAsync</c>.</summary>
+        /// <summary>
+        /// Emits <c>LoadTable</c>, <c>LoadEntries</c> for asset tables, and their UniTask variants.
+        /// </summary>
         static void EmitLoadTable(StringBuilder sb, Scope scope, TableModel model, EmitOptions options, TypeNames types, int level)
         {
             var table = types.Name(model.IsAsset ? AssetTableType : StringTableType);
             var kind = model.IsAsset ? "Asset" : "String";
+            const string tableDoc = "Loads the table for the selected locale without blocking.";
+            const string entriesDoc = "Loads the table and the assets of all its entries for the selected locale without blocking.";
 
+            EmitLoadMethod(sb, scope.LoadTableName, "Load" + kind + "Table", table, tableDoc, options, types, level);
+            if (scope.LoadEntriesName != null)
+                EmitLoadMethod(sb, scope.LoadEntriesName, "LoadAssetTableEntries", table, entriesDoc, options, types, level);
+
+            if (scope.LoadTableAsyncName != null)
+                EmitLoadAsyncMethod(sb, scope.LoadTableAsyncName, "Load" + kind + "TableAsync", table, tableDoc, options, types, level);
+            if (scope.LoadEntriesAsyncName != null)
+                EmitLoadAsyncMethod(sb, scope.LoadEntriesAsyncName, "LoadAssetTableEntriesAsync", table, entriesDoc, options, types, level);
+        }
+
+        static void EmitLoadMethod(
+            StringBuilder sb, string name, string runtimeMethod, string table, string doc,
+            EmitOptions options, TypeNames types, int level)
+        {
             sb.Append('\n');
             if (options.XmlDocs)
-                sb.Append(Indent(level)).Append("/// <summary>Loads the table for the selected locale without blocking.</summary>\n");
+                sb.Append(Indent(level)).Append("/// <summary>").Append(doc).Append("</summary>\n");
             sb.Append(Indent(level)).Append("public static ").Append(types.Name(TaskType)).Append('<').Append(table).Append("> ")
-              .Append(scope.LoadTableName).Append("() => ").Append(types.Name(EmitOptions.RuntimeTypeName))
-              .Append(".Load").Append(kind).Append("Table(TableName);\n");
+              .Append(name).Append("() => ").Append(types.Name(EmitOptions.RuntimeTypeName))
+              .Append('.').Append(runtimeMethod).Append("(TableName);\n");
+        }
 
-            if (scope.LoadTableAsyncName == null)
-                return;
-
+        static void EmitLoadAsyncMethod(
+            StringBuilder sb, string name, string runtimeMethod, string table, string doc,
+            EmitOptions options, TypeNames types, int level)
+        {
             sb.Append('\n');
             if (options.XmlDocs)
-                sb.Append(Indent(level)).Append("/// <summary>Loads the table for the selected locale without blocking.</summary>\n");
+                sb.Append(Indent(level)).Append("/// <summary>").Append(doc).Append("</summary>\n");
             sb.Append(Indent(level)).Append("public static ").Append(types.Name(UniTaskType)).Append('<').Append(table).Append("> ")
-              .Append(scope.LoadTableAsyncName).Append('(').Append(types.Name(CancellationTokenType)).Append(' ')
+              .Append(name).Append('(').Append(types.Name(CancellationTokenType)).Append(' ')
               .Append(CancellationTokenName).Append(" = default)\n");
             sb.Append(Indent(level)).Append("    => ").Append(types.Name(EmitOptions.UniTaskRuntimeTypeName))
-              .Append(".Load").Append(kind).Append("TableAsync(TableName, ").Append(CancellationTokenName).Append(");\n");
+              .Append('.').Append(runtimeMethod).Append("(TableName, ").Append(CancellationTokenName).Append(");\n");
         }
 
         static void EmitRefClass(StringBuilder sb, TableModel model, EmitOptions options, TypeNames types, int level)

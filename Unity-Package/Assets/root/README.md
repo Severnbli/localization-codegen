@@ -331,11 +331,12 @@ await Ui.LoadTable();      // e.g. behind a loading screen
 label.text = Ui.HelloWorld; // the table is loaded, so this does not wait
 ```
 
-- Asset table classes return `Task<AssetTable>`. Only the table is loaded; each asset loads when it is requested.
-- With [UniTask Members](#unitask) there is also `LoadTableAsync(CancellationToken)` returning `UniTask<StringTable>` / `UniTask<AssetTable>`.
+- Asset table classes return `Task<AssetTable>`. `LoadTable()` loads only the table; each asset loads when it is requested.
+- Asset table classes also get `LoadEntries()`, which loads the table and the assets of all its entries, so no asset lookup waits afterwards. Assets of a table whose **Preload Asset Table** metadata is **No Preload** are not loaded.
+- With [UniTask Members](#unitask) there are also `LoadTableAsync(CancellationToken)` and, for asset tables, `LoadEntriesAsync(CancellationToken)`, returning `UniTask<StringTable>` / `UniTask<AssetTable>`.
 - The table is loaded for the current locale. After a locale change, call it again to load the new locale's table.
 - If Localization is not configured, the task completes with `null`.
-- Turning the option on never renames existing members. A key named `LoadTable` keeps its name, and the method gets a suffix (`LoadTable_2`). A table collection named `Task`, `StringTable` or `AssetTable` gets the `Table` class suffix.
+- Turning the option on never renames existing members. A key named `LoadTable` or `LoadEntries` keeps its name, and the method gets a suffix (`LoadTable_2`). A table collection named `Task`, `StringTable` or `AssetTable` gets the `Table` class suffix.
 
 ### UniTask
 
@@ -379,7 +380,7 @@ Open **Project Settings > Localization Codegen**, or **Window > Localization Cod
 | Smart Parameter Types | `Object` | `Object`, `Inferred` or [`Mapping`](#parameter-types). |
 | Naming Convention | `Keep` | `Keep` or `PascalCase`. |
 | Key Separators | empty | Characters that create nested classes, e.g. `/`. |
-| Load Table Method | off | Emit [`LoadTable()`](#loading-a-table) on every table class to load the table without blocking. |
+| Load Table Method | off | Emit [`LoadTable()`](#loading-a-table) on every table class, and `LoadEntries()` on asset table classes, to load without blocking. |
 | UniTask Members | off | Also emit [`…Async` members](#unitask) returning `UniTask`. Requires UniTask. |
 | Generate .asmdef | off | Write an assembly definition into the output folder, so the generated code gets its own assembly. |
 | Fail CI On Smart String Mismatch | off | Make `CheckBatch` fail on locale placeholder mismatches. |

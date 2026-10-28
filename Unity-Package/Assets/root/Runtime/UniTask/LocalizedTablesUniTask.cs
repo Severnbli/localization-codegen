@@ -108,6 +108,54 @@ namespace Severnbli.LocalizationCodegen
         }
 
         /// <summary>
+        /// Loads an asset table and the assets of all its entries for the selected locale without blocking, so later
+        /// lookups do not wait. A table whose Preload Asset Table metadata is No Preload loads without its assets.
+        /// Completes with <see langword="null"/> when Localization is not configured.
+        /// </summary>
+        public static async UniTask<AssetTable> LoadAssetTableEntriesAsync(
+            string table,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!LocalizedTables.HasSettings())
+                return null;
+
+            await ToUniTask(LocalizationSettings.AssetDatabase.PreloadTables(table), cancellationToken);
+            return await LoadAssetTableAsync(table, cancellationToken);
+        }
+
+        /// <summary>Untyped variant of <see cref="ToUniTask{T}"/>.</summary>
+        static UniTask ToUniTask(AsyncOperationHandle handle, CancellationToken cancellationToken)
+        {
+            if (!handle.IsValid())
+                return UniTask.FromException(new InvalidOperationException("The localization operation is not valid."));
+            if (handle.IsDone)
+            {
+                return handle.Status == AsyncOperationStatus.Succeeded
+                    ? UniTask.CompletedTask
+                    : UniTask.FromException(handle.OperationException ?? new InvalidOperationException(
+                        "The localization operation failed with status " + handle.Status + "."));
+            }
+
+            var source = new UniTaskCompletionSource();
+            var registration = cancellationToken.CanBeCanceled
+                ? cancellationToken.RegisterWithoutCaptureExecutionContext(() => source.TrySetCanceled(cancellationToken))
+                : default;
+
+            handle.Completed += completed =>
+            {
+                registration.Dispose();
+                if (completed.Status == AsyncOperationStatus.Succeeded)
+                    source.TrySetResult();
+                else
+                    source.TrySetException(completed.OperationException ?? new InvalidOperationException(
+                        "The localization operation failed with status " + completed.Status + "."));
+            };
+
+            return source.Task;
+        }
+
+        /// <summary>
         /// Awaits a Localization operation. The result is read inside the completion callback because Localization
         /// releases the operation right after it completes.
         /// </summary>
