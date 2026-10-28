@@ -98,6 +98,9 @@ namespace Severnbli.LocalizationCodegen.Editor
         /// <summary>When true, every member also gets a UniTask-returning <c>...Async</c> variant.</summary>
         public bool UniTask;
 
+        /// <summary>When true, every table class gets a <c>LoadTable</c> method (and <c>LoadTableAsync</c> with UniTask).</summary>
+        public bool LoadTable;
+
         /// <summary>
         /// Optional check whether a namespace (empty for the global namespace) contains a type with the given simple
         /// name. Generated files keep a type <c>global::</c> qualified when its simple name could bind to another type.
@@ -107,8 +110,8 @@ namespace Severnbli.LocalizationCodegen.Editor
         /// <summary>Stable signature of every option that can change output.</summary>
         public string Signature()
         {
-            // UniTask is appended only when enabled, so existing hashes (and files) stay valid after upgrading.
-            return (UniTask ? "unitask|" : "") + string.Join("|", new[]
+            // UniTask and LoadTable are added only when enabled, so existing hashes (and files) stay valid after upgrading.
+            return (LoadTable ? "loadtable|" : "") + (UniTask ? "unitask|" : "") + string.Join("|", new[]
             {
                 Namespace ?? "<global>",
                 "usings",

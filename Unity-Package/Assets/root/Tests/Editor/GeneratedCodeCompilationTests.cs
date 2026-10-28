@@ -159,7 +159,8 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
                     SmartStrings = SmartStringMode.MethodsAndRefs,
                     SmartParamTypes = SmartParamTypeMode.Inferred,
                     KeySeparators = "/",
-                    UniTask = uniTask
+                    UniTask = uniTask,
+                    LoadTable = true
                 }
             };
 

@@ -579,5 +579,131 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             StringAssert.Contains("public static string Quit =>", output);
             StringAssert.Contains("public static string Title =>", output);
         }
+
+        static EmitOptions LoadTableOptions(bool uniTask = false)
+        {
+            return new EmitOptions { Namespace = "Localization", LoadTable = true, UniTask = uniTask };
+        }
+
+        [Test]
+        public void LoadTable_IsOffByDefault()
+        {
+            var model = Model("Ui", false, (1L, "Title"));
+            var options = LegacyOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.DoesNotContain("LoadTable", output);
+            StringAssert.DoesNotContain("System.Threading.Tasks", output);
+        }
+
+        [Test]
+        public void LoadTable_StringTable()
+        {
+            var model = Model("Ui", false, (1L, "Title"));
+            var options = LoadTableOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(
+                "        public const string TableName = \"Ui\";\n" +
+                "\n" +
+                "        public static Task<StringTable> LoadTable() => LocalizedTables.LoadStringTable(TableName);\n",
+                output);
+            StringAssert.Contains("using System.Threading.Tasks;\n", output);
+            StringAssert.Contains("using UnityEngine.Localization.Tables;\n", output);
+            StringAssert.DoesNotContain("LoadTableAsync", output);
+        }
+
+        [Test]
+        public void LoadTable_AssetTable()
+        {
+            var model = Model("Ui", true, (1L, "Logo"));
+            var options = LoadTableOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(
+                "public static Task<AssetTable> LoadTable() => LocalizedTables.LoadAssetTable(TableName);\n", output);
+            StringAssert.Contains(
+                "public static Task<AssetTable> LoadEntries() => LocalizedTables.LoadAssetTableEntries(TableName);\n",
+                output);
+        }
+
+        [Test]
+        public void LoadEntries_OnlyOnAssetTables()
+        {
+            var model = Model("Ui", false, (1L, "Title"));
+            var options = LoadTableOptions(uniTask: true);
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+
+            StringAssert.DoesNotContain("LoadEntries", CodeEmitter.Emit(model, options));
+        }
+
+        [Test]
+        public void LoadEntries_WithUniTask_EmitsAsyncVariant()
+        {
+            var model = Model("Ui", true, (1L, "Logo"));
+            var options = LoadTableOptions(uniTask: true);
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(
+                "        public static UniTask<AssetTable> LoadEntriesAsync(CancellationToken cancellationToken = default)\n" +
+                "            => LocalizedTablesUniTask.LoadAssetTableEntriesAsync(TableName, cancellationToken);\n",
+                output);
+        }
+
+        [Test]
+        public void LoadEntries_DoesNotRenameAKeyWithTheSameName()
+        {
+            var model = Model("Ui", true, (1L, "LoadEntries"));
+            var options = LoadTableOptions();
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(" LoadEntries => LocalizedTables.GetAsset<", output);
+            StringAssert.Contains("public static Task<AssetTable> LoadEntries_2()", output);
+        }
+
+        [Test]
+        public void LoadTable_WithUniTask_EmitsAsyncVariant()
+        {
+            var model = Model("Ui", false, (1L, "Title"));
+            var options = LoadTableOptions(uniTask: true);
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains(
+                "        public static UniTask<StringTable> LoadTableAsync(CancellationToken cancellationToken = default)\n" +
+                "            => LocalizedTablesUniTask.LoadStringTableAsync(TableName, cancellationToken);\n",
+                output);
+        }
+
+        [Test]
+        public void LoadTable_DoesNotRenameAKeyWithTheSameName()
+        {
+            var model = Model("Ui", false, (1L, "LoadTable"), (2L, "LoadTableAsync"));
+            var options = LoadTableOptions(uniTask: true);
+            CodeEmitter.AssignClassNames(new[] { model }, options);
+            var output = CodeEmitter.Emit(model, options);
+
+            StringAssert.Contains("public static string LoadTable =>", output);
+            StringAssert.Contains("public static string LoadTableAsync =>", output);
+            StringAssert.Contains("public static Task<StringTable> LoadTable_2()", output);
+            StringAssert.Contains("public static UniTask<StringTable> LoadTableAsync_3(", output);
+        }
+
+        [Test]
+        public void LoadTable_ReservesItsTypeNamesOnlyWhenOn()
+        {
+            var off = Model("Task", false, (1L, "Title"));
+            CodeEmitter.AssignClassNames(new[] { off }, LegacyOptions());
+            Assert.AreEqual("Task", off.ClassName);
+
+            var on = Model("Task", false, (1L, "Title"));
+            CodeEmitter.AssignClassNames(new[] { on }, LoadTableOptions());
+            Assert.AreEqual("TaskTable", on.ClassName);
+        }
     }
 }

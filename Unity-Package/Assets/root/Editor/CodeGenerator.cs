@@ -291,6 +291,7 @@ namespace Severnbli.LocalizationCodegen.Editor
                 GenerateAsmdef = settings.GenerateAsmdef,
                 // Generated code must compile, so the option only takes effect when the add-on is compiled.
                 UniTask = settings.GenerateUniTask && UniTaskSupport.IsAvailable,
+                LoadTable = settings.GenerateLoadTable,
                 TypeExists = LoadedTypeExists
             };
         }

@@ -17,6 +17,9 @@ namespace Severnbli.LocalizationCodegen.Editor
         const string UniTaskType = "Cysharp.Threading.Tasks.UniTask";
         const string CancellationTokenType = "System.Threading.CancellationToken";
         const string DictionaryType = "System.Collections.Generic.Dictionary";
+        const string TaskType = "System.Threading.Tasks.Task";
+        const string StringTableType = "UnityEngine.Localization.Tables.StringTable";
+        const string AssetTableType = "UnityEngine.Localization.Tables.AssetTable";
         const string CancellationTokenName = "cancellationToken";
 
         /// <summary>
@@ -30,6 +33,12 @@ namespace Severnbli.LocalizationCodegen.Editor
             "LocalizedSprite", "LocalizedTexture", "LocalizedFont", "LocalizedTmpFont", "LocalizedTextCoreFontAsset",
             "UniTask", "CancellationToken", "Dictionary", "IEnumerable"
         };
+
+        /// <summary>
+        /// Types only the <c>LoadTable</c> methods refer to. They are reserved only while the option is on, so turning
+        /// it on is the only thing that can rename a table class with one of these names.
+        /// </summary>
+        static readonly string[] s_LoadTableTypeNames = { "Task", "StringTable", "AssetTable" };
 
         /// <summary>Assigns deterministic, collision-free class names to every model.</summary>
         public static void AssignClassNames(IList<TableModel> models, EmitOptions options)
@@ -74,6 +83,8 @@ namespace Severnbli.LocalizationCodegen.Editor
 
             // Generated files refer to types by their simple names, which a table class must not hide.
             set.UnionWith(s_ReferencedTypeNames);
+            if (options.LoadTable)
+                set.UnionWith(s_LoadTableTypeNames);
             foreach (var model in models)
             {
                 foreach (var entry in model.Entries)
@@ -105,6 +116,20 @@ namespace Severnbli.LocalizationCodegen.Editor
             var root = BuildScopeTree(model, options);
             root.ClassName = className;
             AssignMemberNames(root, options);
+
+            // Claimed after every key's name, so turning the option on never renames an existing member.
+            if (options.LoadTable)
+            {
+                root.LoadTableName = CodegenText.Unique("LoadTable", root.MemberUsed);
+                if (model.IsAsset)
+                    root.LoadEntriesName = CodegenText.Unique("LoadEntries", root.MemberUsed);
+                if (options.UniTask)
+                {
+                    root.LoadTableAsyncName = CodegenText.Unique("LoadTableAsync", root.MemberUsed);
+                    if (model.IsAsset)
+                        root.LoadEntriesAsyncName = CodegenText.Unique("LoadEntriesAsync", root.MemberUsed);
+                }
+            }
 
             var hasNamespace = !string.IsNullOrEmpty(options.Namespace);
             var rootLevel = hasNamespace ? 1 : 0;
@@ -159,6 +184,10 @@ namespace Severnbli.LocalizationCodegen.Editor
             public readonly Dictionary<EntryModel, string> MemberNames = new Dictionary<EntryModel, string>();
             public readonly Dictionary<EntryModel, string> AsyncMemberNames = new Dictionary<EntryModel, string>();
             public readonly HashSet<string> MemberUsed = new HashSet<string>(StringComparer.Ordinal);
+            public string LoadTableName;
+            public string LoadTableAsyncName;
+            public string LoadEntriesName;
+            public string LoadEntriesAsyncName;
         }
 
         static Scope BuildScopeTree(TableModel model, EmitOptions options)
@@ -286,6 +315,9 @@ namespace Severnbli.LocalizationCodegen.Editor
             {
                 sb.Append(Indent(level + 1)).Append("public const string TableName = ")
                   .Append(CodegenText.Literal(model.Name)).Append(";\n");
+
+                if (scope.LoadTableName != null)
+                    EmitLoadTable(sb, scope, model, options, types, level + 1);
             }
 
             var orderedEntries = scope.Entries
@@ -414,6 +446,52 @@ namespace Severnbli.LocalizationCodegen.Editor
             if (withParams)
                 sb.Append(PositionalArray(positional)).Append(", ").Append(NamedDictionary(named, types)).Append(", ");
             sb.Append(tokenName).Append(");\n");
+        }
+
+        /// <summary>
+        /// Emits <c>LoadTable</c>, <c>LoadEntries</c> for asset tables, and their UniTask variants.
+        /// </summary>
+        static void EmitLoadTable(StringBuilder sb, Scope scope, TableModel model, EmitOptions options, TypeNames types, int level)
+        {
+            var table = types.Name(model.IsAsset ? AssetTableType : StringTableType);
+            var kind = model.IsAsset ? "Asset" : "String";
+            const string tableDoc = "Loads the table for the selected locale without blocking.";
+            const string entriesDoc = "Loads the table and the assets of all its entries for the selected locale without blocking.";
+
+            EmitLoadMethod(sb, scope.LoadTableName, "Load" + kind + "Table", table, tableDoc, options, types, level);
+            if (scope.LoadEntriesName != null)
+                EmitLoadMethod(sb, scope.LoadEntriesName, "LoadAssetTableEntries", table, entriesDoc, options, types, level);
+
+            if (scope.LoadTableAsyncName != null)
+                EmitLoadAsyncMethod(sb, scope.LoadTableAsyncName, "Load" + kind + "TableAsync", table, tableDoc, options, types, level);
+            if (scope.LoadEntriesAsyncName != null)
+                EmitLoadAsyncMethod(sb, scope.LoadEntriesAsyncName, "LoadAssetTableEntriesAsync", table, entriesDoc, options, types, level);
+        }
+
+        static void EmitLoadMethod(
+            StringBuilder sb, string name, string runtimeMethod, string table, string doc,
+            EmitOptions options, TypeNames types, int level)
+        {
+            sb.Append('\n');
+            if (options.XmlDocs)
+                sb.Append(Indent(level)).Append("/// <summary>").Append(doc).Append("</summary>\n");
+            sb.Append(Indent(level)).Append("public static ").Append(types.Name(TaskType)).Append('<').Append(table).Append("> ")
+              .Append(name).Append("() => ").Append(types.Name(EmitOptions.RuntimeTypeName))
+              .Append('.').Append(runtimeMethod).Append("(TableName);\n");
+        }
+
+        static void EmitLoadAsyncMethod(
+            StringBuilder sb, string name, string runtimeMethod, string table, string doc,
+            EmitOptions options, TypeNames types, int level)
+        {
+            sb.Append('\n');
+            if (options.XmlDocs)
+                sb.Append(Indent(level)).Append("/// <summary>").Append(doc).Append("</summary>\n");
+            sb.Append(Indent(level)).Append("public static ").Append(types.Name(UniTaskType)).Append('<').Append(table).Append("> ")
+              .Append(name).Append('(').Append(types.Name(CancellationTokenType)).Append(' ')
+              .Append(CancellationTokenName).Append(" = default)\n");
+            sb.Append(Indent(level)).Append("    => ").Append(types.Name(EmitOptions.UniTaskRuntimeTypeName))
+              .Append('.').Append(runtimeMethod).Append("(TableName, ").Append(CancellationTokenName).Append(");\n");
         }
 
         static void EmitRefClass(StringBuilder sb, TableModel model, EmitOptions options, TypeNames types, int level)

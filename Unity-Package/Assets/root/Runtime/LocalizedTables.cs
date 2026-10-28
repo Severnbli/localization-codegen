@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
@@ -140,6 +141,85 @@ namespace Severnbli.LocalizationCodegen
         {
             return LocalizationSettings.AssetDatabase.GetLocalizedAssetAsync<T>(
                 (TableReference)table, (TableEntryReference)key);
+        }
+
+        /// <summary>
+        /// Loads a string table for the selected locale without blocking, so later lookups do not wait for it.
+        /// Completes with <see langword="null"/> when Localization is not configured.
+        /// </summary>
+        public static Task<StringTable> LoadStringTable(string table)
+        {
+            if (!HasSettings())
+                return Task.FromResult<StringTable>(null);
+            return ToTask(LocalizationSettings.StringDatabase.GetTableAsync(table));
+        }
+
+        /// <summary>
+        /// Loads an asset table for the selected locale without blocking. The assets of its entries are loaded
+        /// when they are requested. Completes with <see langword="null"/> when Localization is not configured.
+        /// </summary>
+        public static Task<AssetTable> LoadAssetTable(string table)
+        {
+            if (!HasSettings())
+                return Task.FromResult<AssetTable>(null);
+            return ToTask(LocalizationSettings.AssetDatabase.GetTableAsync(table));
+        }
+
+        /// <summary>
+        /// Loads an asset table and the assets of all its entries for the selected locale without blocking, so later
+        /// lookups do not wait. A table whose Preload Asset Table metadata is No Preload loads without its assets.
+        /// Completes with <see langword="null"/> when Localization is not configured.
+        /// </summary>
+        public static async Task<AssetTable> LoadAssetTableEntries(string table)
+        {
+            if (!HasSettings())
+                return null;
+
+            await ToTask(LocalizationSettings.AssetDatabase.PreloadTables(table));
+            return await LoadAssetTable(table);
+        }
+
+        /// <summary>
+        /// Awaits a Localization operation through its completion callback, which also works on WebGL. The result is
+        /// read inside the callback because Localization may release the operation right after it completes.
+        /// </summary>
+        static Task<T> ToTask<T>(AsyncOperationHandle<T> handle)
+        {
+            if (!handle.IsValid())
+                return Task.FromException<T>(new System.InvalidOperationException("The localization operation is not valid."));
+
+            var source = new TaskCompletionSource<T>();
+            handle.Completed += completed =>
+            {
+                if (completed.Status == AsyncOperationStatus.Succeeded)
+                    source.TrySetResult(completed.Result);
+                else
+                    source.TrySetException(Failure(completed.Status, completed.OperationException));
+            };
+            return source.Task;
+        }
+
+        /// <summary>Untyped variant of <see cref="ToTask{T}(AsyncOperationHandle{T})"/>.</summary>
+        static Task ToTask(AsyncOperationHandle handle)
+        {
+            if (!handle.IsValid())
+                return Task.FromException(new System.InvalidOperationException("The localization operation is not valid."));
+
+            var source = new TaskCompletionSource<bool>();
+            handle.Completed += completed =>
+            {
+                if (completed.Status == AsyncOperationStatus.Succeeded)
+                    source.TrySetResult(true);
+                else
+                    source.TrySetException(Failure(completed.Status, completed.OperationException));
+            };
+            return source.Task;
+        }
+
+        static System.Exception Failure(AsyncOperationStatus status, System.Exception exception)
+        {
+            return exception ?? new System.InvalidOperationException(
+                "The localization operation failed with status " + status + ".");
         }
 
         static object[] ToArray(IList<object> values)
