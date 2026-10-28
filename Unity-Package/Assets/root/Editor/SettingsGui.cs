@@ -32,6 +32,11 @@ namespace Severnbli.LocalizationCodegen.Editor
                 "Generate classes for asset table collections. Disabling this deletes the matching generated files on the next run.");
             public static readonly GUIContent AutoRegenerate = new GUIContent("Regenerate On Changes",
                 "Automatically regenerate when table collections or entries change.");
+            public static readonly GUIContent RegenerateSilently = new GUIContent("Silently On Settings Change",
+                "Regenerate without asking when a setting that changes the generated code is edited. " +
+                "Off asks first.");
+            public static readonly GUIContent RegenerateOnMetadataEdit = new GUIContent("On Metadata Edit",
+                "Regenerate on every edit of the Smart Parameter Types metadata. Off regenerates when the table is saved.");
 
             public static readonly GUIContent SmartStrings = new GUIContent("Smart Strings",
                 "Generate methods with parameters for smart string entries. Off keeps the 1.0 behaviour.");
@@ -89,6 +94,7 @@ namespace Severnbli.LocalizationCodegen.Editor
 
             var oldSmartStrings = s.SmartStrings;
             var oldSmartParamTypes = s.SmartParamTypes;
+            var oldOutput = OutputSettingsKey(s);
             var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = LabelWidth;
             EditorGUI.BeginChangeCheck();
@@ -108,8 +114,8 @@ namespace Severnbli.LocalizationCodegen.Editor
 
                 var smartChanged = s.SmartStrings != oldSmartStrings || s.SmartParamTypes != oldSmartParamTypes;
                 // The setup wizard generates when it finishes, so it is not asked about.
-                if (smartChanged && s.SetupCompleted)
-                    PromptRegenerate();
+                if (OutputSettingsKey(s) != oldOutput && s.SetupCompleted)
+                    OnOutputSettingsChanged(s, smartChanged);
                 else
                     CodegenHooks.MarkDirtyExternal();
 
@@ -120,29 +126,54 @@ namespace Severnbli.LocalizationCodegen.Editor
             return changed;
         }
 
-        static bool s_RegeneratePromptPending;
+        /// <summary>Every setting that changes the generated code. Settings outside it never ask to regenerate.</summary>
+        static string OutputSettingsKey(CodegenSettings s)
+        {
+            return string.Join("|", new[]
+            {
+                s.Namespace, s.OutputFolder, s.GenerateStringTables.ToString(), s.GenerateAssetTables.ToString(),
+                s.SmartStrings.ToString(), s.SmartParamTypes.ToString(), s.GenerateReferences.ToString(),
+                s.GenerateLoadTable.ToString(), s.GenerateUniTask.ToString(), s.GenerateXmlDocs.ToString(),
+                s.Naming.ToString(), s.KeySeparators, s.GenerateAsmdef.ToString()
+            });
+        }
 
         /// <summary>
-        /// Asks whether to regenerate after the smart string settings change, since they change method signatures.
-        /// The dialog opens after the current GUI pass, and only once for several changes in a row.
+        /// Regenerates after a setting that changes the generated code, asking first unless
+        /// <see cref="CodegenSettings.RegenerateSilently"/> is on. Without automatic regeneration only changes to the
+        /// method signatures ask, as nothing else would regenerate either.
         /// </summary>
-        static void PromptRegenerate()
+        static void OnOutputSettingsChanged(CodegenSettings s, bool signaturesChanged)
         {
+            if (s.AutoRegenerate && s.RegenerateSilently)
+                CodegenHooks.MarkDirtyExternal();
+            else if (s.AutoRegenerate || signaturesChanged)
+                PromptRegenerate(signaturesChanged);
+        }
+
+        static bool s_RegeneratePromptPending;
+        static bool s_RegeneratePromptSignatures;
+
+        /// <summary>
+        /// Asks whether to regenerate after the settings change. The dialog opens after the current GUI pass, and only
+        /// once for several changes in a row.
+        /// </summary>
+        static void PromptRegenerate(bool signaturesChanged)
+        {
+            s_RegeneratePromptSignatures |= signaturesChanged;
             if (s_RegeneratePromptPending)
                 return;
 
             s_RegeneratePromptPending = true;
             EditorApplication.delayCall += () =>
             {
+                var message = s_RegeneratePromptSignatures
+                    ? "The smart string settings changed the generated method signatures. Regenerate the code now?"
+                    : "The settings changed the generated code. Regenerate the code now?";
                 s_RegeneratePromptPending = false;
-                if (EditorUtility.DisplayDialog(
-                        "Localization Codegen",
-                        "The smart string settings changed the generated method signatures. Regenerate the code now?",
-                        "Regenerate",
-                        "Later"))
-                {
+                s_RegeneratePromptSignatures = false;
+                if (EditorUtility.DisplayDialog("Localization Codegen", message, "Regenerate", "Later"))
                     CodeGenerator.Run(new GenerateOptions { IsAutomatic = false, PromptOnMassDeletion = true });
-                }
             };
         }
 
@@ -328,7 +359,8 @@ namespace Severnbli.LocalizationCodegen.Editor
             {
                 s.GenerateAsmdef = true;
                 s.SaveSettings();
-                CodegenHooks.MarkDirtyExternal();
+                if (s.SetupCompleted)
+                    OnOutputSettingsChanged(s, signaturesChanged: false);
             }
 
             s_OwnerCacheKey = null;
@@ -339,6 +371,13 @@ namespace Severnbli.LocalizationCodegen.Editor
             s.GenerateStringTables = EditorGUILayout.Toggle(Content.StringTables, s.GenerateStringTables);
             s.GenerateAssetTables = EditorGUILayout.Toggle(Content.AssetTables, s.GenerateAssetTables);
             s.AutoRegenerate = EditorGUILayout.Toggle(Content.AutoRegenerate, s.AutoRegenerate);
+            using (new EditorGUI.DisabledScope(!s.AutoRegenerate))
+            using (new EditorGUI.IndentLevelScope())
+            {
+                s.RegenerateSilently = EditorGUILayout.Toggle(Content.RegenerateSilently, s.RegenerateSilently);
+                s.RegenerateOnMetadataEdit =
+                    EditorGUILayout.Toggle(Content.RegenerateOnMetadataEdit, s.RegenerateOnMetadataEdit);
+            }
 
             if (!s.GenerateStringTables && !s.GenerateAssetTables)
                 EditorGUILayout.HelpBox("Both table kinds are off, so nothing will be generated.", MessageType.Warning);
@@ -373,7 +412,8 @@ namespace Severnbli.LocalizationCodegen.Editor
         static void DrawNaming(CodegenSettings s)
         {
             s.Naming = (NamingConvention)EditorGUILayout.EnumPopup(Content.Naming, s.Naming);
-            s.KeySeparators = EditorGUILayout.TextField(Content.KeySeparators, s.KeySeparators);
+            // Delayed, so typing several characters asks to regenerate once.
+            s.KeySeparators = EditorGUILayout.DelayedTextField(Content.KeySeparators, s.KeySeparators);
         }
 
         static void DrawAdvanced(CodegenSettings s)
@@ -414,8 +454,11 @@ namespace Severnbli.LocalizationCodegen.Editor
             if (s.OutputFolder != previous)
             {
                 s.SaveSettings();
-                CodegenHooks.MarkDirtyExternal();
                 OnOutputFolderChanged();
+                if (s.SetupCompleted)
+                    OnOutputSettingsChanged(s, signaturesChanged: false);
+                else
+                    CodegenHooks.MarkDirtyExternal();
             }
 
             GUI.FocusControl(null);

@@ -255,7 +255,7 @@ public static string Greeting(object arg0, int count)
 - Variables provided by a **Global Variables Group** are not parameters; Unity resolves them.
 - **Smart Parameter Types = Inferred** uses `int` for `plural`, `IEnumerable` for `list`, otherwise `object`.
 - **Smart Parameter Types = Mapping** uses the types you set in the entry's [Smart Parameter Types metadata](#parameter-types) and infers the rest like `Inferred`.
-- Changing **Smart Strings** or **Smart Parameter Types** asks whether to regenerate, since method signatures change.
+- Changing **Smart Strings** or **Smart Parameter Types** asks whether to regenerate, since method signatures change. So does every other setting that changes the generated code, unless **Silently On Settings Change** is on.
 - Placeholder differences between locales are reported as warnings. Enable **Fail CI On Smart String Mismatch** to make `CheckBatch` fail on them.
 - **MethodsAndRefs** additionally emits `Ref.Greeting(...)` returning a `LocalizedString` whose arguments and local variables are set.
 
@@ -270,6 +270,8 @@ With **Smart Parameter Types = Mapping**, you choose parameter types per entry. 
 2. Add **Localization Codegen / Smart Parameter Types**.
 3. Click **Add All Parameters** to add a row for every variable the entry uses in any locale, pre-filled with the inferred type, then change the types you care about. **Add Parameter** adds a single variable.
 4. Each row's name is a dropdown of the entry's variables, labelled with their formatters and locales (`count  (plural; en, ru)`). A warning icon marks a row that generation would warn about; hover it for the reason.
+
+Metadata edits regenerate when you save the table (**File > Save Project** or Ctrl+S), not on every click. Turn on **On Metadata Edit** to regenerate after each edit instead.
 
 Rows you delete simply fall back to the inferred type. Outside the Table Editor, names can be typed by hand: the variable name as written in the string (`count`, or `0` for `{0}`).
 
@@ -377,6 +379,8 @@ Open **Project Settings > Localization Codegen**, or **Window > Localization Cod
 | String Tables | on | Generate classes for string table collections. Disabling deletes the matching files on the next run. |
 | Asset Tables | on | Generate classes for asset table collections. Disabling deletes the matching files on the next run. |
 | Regenerate On Changes | on | Debounced automatic regeneration after table edits and external (VCS) changes. |
+| Silently On Settings Change | off | Regenerate without asking when a setting that changes the generated code is edited. Off asks first. Needs **Regenerate On Changes**. |
+| On Metadata Edit | off | Regenerate after every edit of the Smart Parameter Types metadata. Off regenerates when the table is saved. Needs **Regenerate On Changes**. |
 | Generate Reference Members | off | Emit the nested [`Ref` class](#reference-members). |
 | XML Documentation | off | Add XML docs with the default locale text and smart string parameters. |
 | Smart Strings | off (upgraded) / `Methods` (new) | `Off`, `Methods` or `MethodsAndRefs`. |

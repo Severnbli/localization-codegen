@@ -9,6 +9,8 @@ namespace Severnbli.LocalizationCodegen.Editor
     /// <summary>
     /// Editor for <see cref="SmartParameterTypes"/>: picks names from the variables the entry uses in any locale,
     /// adds every variable at once, and shows the warnings generation would report.
+    /// Edits regenerate only with <see cref="CodegenSettings.RegenerateOnMetadataEdit"/>; otherwise the asset
+    /// postprocessor does once the table is saved.
     /// </summary>
     [CustomPropertyDrawer(typeof(SmartParameterTypes))]
     sealed class SmartParameterTypesDrawer : PropertyDrawer
@@ -115,7 +117,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             if (remove >= 0)
             {
                 parameters.DeleteArrayElementAtIndex(remove);
-                CodegenHooks.MarkDirtyExternal();
+                OnEdited();
             }
         }
 
@@ -195,7 +197,7 @@ namespace Severnbli.LocalizationCodegen.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     nameProperty.stringValue = typed;
-                    CodegenHooks.MarkDirtyExternal();
+                    OnEdited();
                 }
             }
             else
@@ -210,7 +212,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             EditorGUI.BeginChangeCheck();
             EditorGUI.PropertyField(typeRect, typeProperty, GUIContent.none);
             if (EditorGUI.EndChangeCheck())
-                CodegenHooks.MarkDirtyExternal();
+                OnEdited();
 
             var normalized = SmartParameterMapping.NormalizeName(name);
             var duplicate = normalized.Length > 0 && !seen.Add(normalized);
@@ -294,7 +296,13 @@ namespace Severnbli.LocalizationCodegen.Editor
 
             change(parameters);
             serializedObject.ApplyModifiedProperties();
-            CodegenHooks.MarkDirtyExternal();
+            OnEdited();
+        }
+
+        static void OnEdited()
+        {
+            if (CodegenSettings.instance.RegenerateOnMetadataEdit)
+                CodegenHooks.MarkDirtyExternal();
         }
     }
 }
