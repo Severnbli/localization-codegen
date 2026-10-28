@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0] - 2026-10-28
+
+### Added
+- **Smart Parameter Types = Mapping**: set the type of each smart string parameter with the new
+  **Localization Codegen / Smart Parameter Types** metadata on a shared table entry (`count` → `Int`,
+  `0` → `DateTime`, …). The table text does not change. Parameters without a type are inferred like `Inferred`,
+  and positional parameters can be typed too.
+- Warnings when a mapped type cannot be formatted by `plural` (`String`, `Bool`, `Char`, `DateTime`, `Object`) or
+  `list` (anything but `List`), and for mapped names that are not parameters of the entry, empty or listed twice.
+- Changing **Smart Strings** or **Smart Parameter Types** in the settings asks whether to regenerate the code.
+
 ## [1.2.2] - 2026-10-26
 
 ### Changed

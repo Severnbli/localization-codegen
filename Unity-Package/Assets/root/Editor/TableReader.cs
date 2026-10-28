@@ -432,6 +432,15 @@ namespace Severnbli.LocalizationCodegen.Editor
                 modelEntry.Preview = FindFirstValue(collection, sharedEntry.Id);
 
             BuildParams(modelEntry, warnings, collectionName, sharedEntry.Key);
+            if (m_Options.SmartParamTypes == SmartParamTypeMode.Mapping)
+            {
+                SmartParameterMapping.Apply(
+                    modelEntry,
+                    sharedEntry.Metadata?.GetMetadata<SmartParameterTypes>()?.Parameters,
+                    warnings,
+                    collectionName,
+                    sharedEntry.Key);
+            }
             ValidateLocales(modelEntry, referenceUsages, referenceLocale, warnings, collectionName, sharedEntry.Key);
         }
 

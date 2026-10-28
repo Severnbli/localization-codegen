@@ -36,7 +36,8 @@ namespace Severnbli.LocalizationCodegen.Editor
             public static readonly GUIContent SmartStrings = new GUIContent("Smart Strings",
                 "Generate methods with parameters for smart string entries. Off keeps the 1.0 behaviour.");
             public static readonly GUIContent SmartParamTypes = new GUIContent("Smart Parameter Types",
-                "Object uses object for every named parameter. Inferred uses int for plural and IEnumerable for list.");
+                "Object uses object for every named parameter. Inferred uses int for plural and IEnumerable for list. " +
+                "Mapping uses the types from the Smart Parameter Types metadata of an entry and infers the rest.");
             public static readonly GUIContent References = new GUIContent("Generate Reference Members",
                 "Emit a nested Ref class with LocalizedString / LocalizedAsset references that follow locale changes.");
             public static readonly GUIContent UniTask = new GUIContent("UniTask Members",
@@ -85,6 +86,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             s.EnsureMigrated();
 
             var oldSmartStrings = s.SmartStrings;
+            var oldSmartParamTypes = s.SmartParamTypes;
             var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = LabelWidth;
             EditorGUI.BeginChangeCheck();
@@ -101,13 +103,45 @@ namespace Severnbli.LocalizationCodegen.Editor
             if (changed)
             {
                 s.SaveSettings();
-                CodegenHooks.MarkDirtyExternal();
+
+                var smartChanged = s.SmartStrings != oldSmartStrings || s.SmartParamTypes != oldSmartParamTypes;
+                // The setup wizard generates when it finishes, so it is not asked about.
+                if (smartChanged && s.SetupCompleted)
+                    PromptRegenerate();
+                else
+                    CodegenHooks.MarkDirtyExternal();
 
                 if (oldSmartStrings == SmartStringMode.Off && s.SmartStrings != SmartStringMode.Off)
                     CodeGenerator.LogPropertyToMethodChanges();
             }
 
             return changed;
+        }
+
+        static bool s_RegeneratePromptPending;
+
+        /// <summary>
+        /// Asks whether to regenerate after the smart string settings change, since they change method signatures.
+        /// The dialog opens after the current GUI pass, and only once for several changes in a row.
+        /// </summary>
+        static void PromptRegenerate()
+        {
+            if (s_RegeneratePromptPending)
+                return;
+
+            s_RegeneratePromptPending = true;
+            EditorApplication.delayCall += () =>
+            {
+                s_RegeneratePromptPending = false;
+                if (EditorUtility.DisplayDialog(
+                        "Localization Codegen",
+                        "The smart string settings changed the generated method signatures. Regenerate the code now?",
+                        "Regenerate",
+                        "Later"))
+                {
+                    CodeGenerator.Run(new GenerateOptions { IsAutomatic = false, PromptOnMassDeletion = true });
+                }
+            };
         }
 
         /// <summary>A collapsible section whose open state is remembered per user.</summary>

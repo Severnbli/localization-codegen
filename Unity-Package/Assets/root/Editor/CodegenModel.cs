@@ -22,7 +22,10 @@ namespace Severnbli.LocalizationCodegen.Editor
     public enum SmartParamTypeMode
     {
         Object = 0,
-        Inferred = 1
+        Inferred = 1,
+
+        /// <summary>Types from <see cref="SmartParameterTypes"/> entry metadata; other parameters are inferred.</summary>
+        Mapping = 2
     }
 
     /// <summary>A table collection reduced to the information the emitter needs.</summary>

@@ -73,7 +73,7 @@ namespace Severnbli.LocalizationCodegen.Editor
 
         public SmartParamTypeMode SmartParamTypes
         {
-            get => (SmartParamTypeMode)Mathf.Clamp(smartParamTypes, 0, 1);
+            get => (SmartParamTypeMode)Mathf.Clamp(smartParamTypes, 0, 2);
             set => smartParamTypes = (int)value;
         }
 
