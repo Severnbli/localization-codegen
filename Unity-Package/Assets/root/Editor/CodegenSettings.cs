@@ -43,6 +43,10 @@ namespace Severnbli.LocalizationCodegen.Editor
         // Options introduced in 1.3.1. Off by default, so no migration is needed.
         [SerializeField] private bool generateLoadTable;
 
+        // Options introduced in 1.3.3. Off by default, so no migration is needed.
+        [SerializeField] private bool regenerateSilently;
+        [SerializeField] private bool regenerateOnMetadataEdit;
+
         public bool SetupCompleted { get => setupCompleted; set => setupCompleted = value; }
         public string OutputFolder { get => outputFolder; set => outputFolder = value; }
         public string Namespace { get => generatedNamespace; set => generatedNamespace = value; }
@@ -62,6 +66,8 @@ namespace Severnbli.LocalizationCodegen.Editor
         public bool FailOnSmartStringMismatch { get => failOnSmartStringMismatch; set => failOnSmartStringMismatch = value; }
         public bool GenerateUniTask { get => generateUniTask; set => generateUniTask = value; }
         public bool GenerateLoadTable { get => generateLoadTable; set => generateLoadTable = value; }
+        public bool RegenerateSilently { get => regenerateSilently; set => regenerateSilently = value; }
+        public bool RegenerateOnMetadataEdit { get => regenerateOnMetadataEdit; set => regenerateOnMetadataEdit = value; }
 
         public SmartStringMode SmartStrings
         {

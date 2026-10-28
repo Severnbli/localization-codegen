@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.3] - 2026-10-28
+
+### Added
+- **Silently On Settings Change**: regenerate without asking when a setting that changes the generated code is
+  edited. Off by default.
+- **On Metadata Edit**: regenerate on every edit of the **Smart Parameter Types** metadata. Off by default.
+
+### Changed
+- Editing **Smart Parameter Types** metadata no longer regenerates on every click; the code regenerates when the
+  table is saved.
+- Every setting that changes the generated code (namespace, output folder, table kinds, members, naming, `.asmdef`)
+  now asks whether to regenerate, like **Smart Strings** and **Smart Parameter Types** already did.
+- **Key Separators** applies when you press Enter or leave the field, so typing asks to regenerate once.
+
 ## [1.3.2] - 2026-10-28
 
 ### Added
