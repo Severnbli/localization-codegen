@@ -268,7 +268,10 @@ With **Smart Parameter Types = Mapping**, you choose parameter types per entry. 
 
 1. Open the collection in **Window > Asset Management > Localization Tables** and open the metadata of the key (shared by all locales).
 2. Add **Localization Codegen / Smart Parameter Types**.
-3. Add one row per parameter: the variable name as written in the string (`count`, or `0` for `{0}`) and a type.
+3. Click **Add All Parameters** to add a row for every variable the entry uses in any locale, pre-filled with the inferred type, then change the types you care about. **Add Parameter** adds a single variable.
+4. Each row's name is a dropdown of the entry's variables, labelled with their formatters and locales (`count  (plural; en, ru)`). A warning icon marks a row that generation would warn about; hover it for the reason.
+
+Rows you delete simply fall back to the inferred type. Outside the Table Editor, names can be typed by hand: the variable name as written in the string (`count`, or `0` for `{0}`).
 
 ```csharp
 // "{player} has {count:plural:one coin|{} coins}" with player = String, count = Int

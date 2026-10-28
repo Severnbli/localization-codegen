@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- The **Smart Parameter Types** metadata editor lists the variables an entry uses in any locale: each row's name is
+  a dropdown labelled with formatters and locales, **Add Parameter** adds one variable, and **Add All Parameters**
+  adds every variable without a row with its inferred type, so only the types are left to pick.
+- Rows that generation would warn about (wrong type for `plural` / `list`, unknown or duplicate names) show a
+  warning icon with the reason.
+
 ## [1.3.1] - 2026-10-28
 
 ### Added
