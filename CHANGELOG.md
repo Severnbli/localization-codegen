@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.3.2] - 2026-10-28
 
 ### Added
 - The **Smart Parameter Types** metadata editor lists the variables an entry uses in any locale: each row's name is

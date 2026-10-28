@@ -134,7 +134,7 @@ Add the scoped registry and the dependency to `Packages/manifest.json`:
     }
   ],
   "dependencies": {
-    "com.severnbli.localization-codegen": "1.3.1"
+    "com.severnbli.localization-codegen": "1.3.2"
   }
 }
 ```
