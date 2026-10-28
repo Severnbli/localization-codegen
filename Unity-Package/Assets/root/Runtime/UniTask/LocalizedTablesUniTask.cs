@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
 using UnityEngine.Localization.SmartFormat.PersistentVariables;
+using UnityEngine.Localization.Tables;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
 namespace Severnbli.LocalizationCodegen
@@ -76,6 +77,34 @@ namespace Severnbli.LocalizationCodegen
 
             var handle = LocalizationSettings.AssetDatabase.GetLocalizedAssetAsync<T>(table, key);
             return ToUniTask(handle, cancellationToken);
+        }
+
+        /// <summary>
+        /// Loads a string table for the selected locale without blocking, so later lookups do not wait for it.
+        /// Completes with <see langword="null"/> when Localization is not configured.
+        /// </summary>
+        public static UniTask<StringTable> LoadStringTableAsync(string table, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return UniTask.FromCanceled<StringTable>(cancellationToken);
+            if (!LocalizedTables.HasSettings())
+                return UniTask.FromResult<StringTable>(null);
+
+            return ToUniTask(LocalizationSettings.StringDatabase.GetTableAsync(table), cancellationToken);
+        }
+
+        /// <summary>
+        /// Loads an asset table for the selected locale without blocking. The assets of its entries are loaded
+        /// when they are requested. Completes with <see langword="null"/> when Localization is not configured.
+        /// </summary>
+        public static UniTask<AssetTable> LoadAssetTableAsync(string table, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return UniTask.FromCanceled<AssetTable>(cancellationToken);
+            if (!LocalizedTables.HasSettings())
+                return UniTask.FromResult<AssetTable>(null);
+
+            return ToUniTask(LocalizationSettings.AssetDatabase.GetTableAsync(table), cancellationToken);
         }
 
         /// <summary>

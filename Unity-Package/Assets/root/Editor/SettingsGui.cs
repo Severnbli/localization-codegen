@@ -42,6 +42,8 @@ namespace Severnbli.LocalizationCodegen.Editor
                 "Emit a nested Ref class with LocalizedString / LocalizedAsset references that follow locale changes.");
             public static readonly GUIContent UniTask = new GUIContent("UniTask Members",
                 "Also emit ...Async members that return UniTask and accept a CancellationToken. Requires UniTask (com.cysharp.unitask).");
+            public static readonly GUIContent LoadTable = new GUIContent("Load Table Method",
+                "Emit LoadTable() on every table class to load the table without blocking (and LoadTableAsync with UniTask Members).");
             public static readonly GUIContent XmlDocs = new GUIContent("XML Documentation",
                 "Emit XML doc comments containing the default locale text.");
 
@@ -360,6 +362,7 @@ namespace Severnbli.LocalizationCodegen.Editor
                     s.GenerateReferences = value;
             }
 
+            s.GenerateLoadTable = EditorGUILayout.Toggle(Content.LoadTable, s.GenerateLoadTable);
             s.GenerateUniTask = EditorGUILayout.Toggle(Content.UniTask, s.GenerateUniTask);
             if (s.GenerateUniTask && !UniTaskSupport.IsAvailable)
                 EditorGUILayout.HelpBox(UniTaskSupport.MissingMessage, MessageType.Warning);
