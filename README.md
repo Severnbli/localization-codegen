@@ -134,7 +134,7 @@ Add the scoped registry and the dependency to `Packages/manifest.json`:
     }
   ],
   "dependencies": {
-    "com.severnbli.localization-codegen": "1.2.2"
+    "com.severnbli.localization-codegen": "1.3.0"
   }
 }
 ```
@@ -254,11 +254,42 @@ public static string Greeting(object arg0, int count)
 - `{}` (the current value inside a formatter) is not a parameter.
 - Variables provided by a **Global Variables Group** are not parameters; Unity resolves them.
 - **Smart Parameter Types = Inferred** uses `int` for `plural`, `IEnumerable` for `list`, otherwise `object`.
+- **Smart Parameter Types = Mapping** uses the types you set in the entry's [Smart Parameter Types metadata](#parameter-types) and infers the rest like `Inferred`.
+- Changing **Smart Strings** or **Smart Parameter Types** asks whether to regenerate, since method signatures change.
 - Placeholder differences between locales are reported as warnings. Enable **Fail CI On Smart String Mismatch** to make `CheckBatch` fail on them.
 - **MethodsAndRefs** additionally emits `Ref.Greeting(...)` returning a `LocalizedString` whose arguments and local variables are set.
 
 > [!NOTE]
 > Smart strings are opt-in. Upgraded projects default to `Off`; new projects default to `Methods` when the setup wizard completes.
+
+#### Parameter types
+
+With **Smart Parameter Types = Mapping**, you choose parameter types per entry. The types are stored as entry metadata, so the text players see never changes.
+
+1. Open the collection in **Window > Asset Management > Localization Tables** and open the metadata of the key (shared by all locales).
+2. Add **Localization Codegen / Smart Parameter Types**.
+3. Add one row per parameter: the variable name as written in the string (`count`, or `0` for `{0}`) and a type.
+
+```csharp
+// "{player} has {count:plural:one coin|{} coins}" with player = String, count = Int
+public static string Coins(int count, string player)
+    => LocalizedTables.GetString(TableName, "Coins",
+        new Dictionary<string, object> { ["count"] = count, ["player"] = player });
+```
+
+| Type | C# type |
+|---|---|
+| `Object` | `object` |
+| `String` | `string` |
+| `Int`, `Long`, `Float`, `Double`, `Decimal`, `Bool`, `Char` | `int`, `long`, `float`, `double`, `decimal`, `bool`, `char` |
+| `DateTime` | `System.DateTime` |
+| `List` | `System.Collections.IEnumerable` |
+
+Parameters without a row are inferred. These cases are reported as warnings:
+
+- A type that `plural` cannot format (`String`, `Bool`, `Char`, `DateTime`, `Object`) on a variable used with `plural`. `plural` needs a number or a collection.
+- A type other than `List` on a variable used with `list`.
+- A row whose name is not a parameter of the entry (for example after renaming a placeholder), a row without a name, and a name listed twice (the first row wins).
 
 ### Reference members
 
@@ -326,7 +357,7 @@ Open **Project Settings > Localization Codegen**, or **Window > Localization Cod
 | Generate Reference Members | off | Emit the nested [`Ref` class](#reference-members). |
 | XML Documentation | off | Add XML docs with the default locale text and smart string parameters. |
 | Smart Strings | off (upgraded) / `Methods` (new) | `Off`, `Methods` or `MethodsAndRefs`. |
-| Smart Parameter Types | `Object` | `Object` or `Inferred`. |
+| Smart Parameter Types | `Object` | `Object`, `Inferred` or [`Mapping`](#parameter-types). |
 | Naming Convention | `Keep` | `Keep` or `PascalCase`. |
 | Key Separators | empty | Characters that create nested classes, e.g. `/`. |
 | UniTask Members | off | Also emit [`…Async` members](#unitask) returning `UniTask`. Requires UniTask. |

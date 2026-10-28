@@ -216,6 +216,14 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             });
             strings.Entries.Add(mixed);
 
+            // Types from Smart Parameter Types metadata, including a typed positional parameter.
+            var mapped = new EntryModel { Id = 11, Key = "Mapped" };
+            mapped.Params.Add(new SmartParam { IsPositional = true, Index = 0, SourceName = "0", ClrName = "arg0", TypeName = "int" });
+            mapped.Params.Add(new SmartParam { SourceName = "name", ClrName = "name", TypeName = "string" });
+            mapped.Params.Add(new SmartParam { SourceName = "price", ClrName = "price", TypeName = "decimal" });
+            mapped.Params.Add(new SmartParam { SourceName = "when", ClrName = "when", TypeName = "System.DateTime" });
+            strings.Entries.Add(mapped);
+
             var assets = new TableModel { Name = "Ui", IsAsset = true };
             assets.Entries.Add(new EntryModel { Id = 1, Key = "Logo", AssetTypeName = "UnityEngine.Sprite" });
             assets.Entries.Add(new EntryModel { Id = 2, Key = "Theme", AssetTypeName = "UnityEngine.AudioClip" });
