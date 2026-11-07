@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.4.0] - 2026-11-07
+
+### Fixed
+- Deleting table collection assets now always deletes their generated files (#14). Before, the files stayed when
+  the last collection was deleted, or when the collection assets were deleted in an order that left a collection
+  without its shared table data.
+
+### Changed
+- Table edits (adding, removing or editing keys, entries and collections) no longer regenerate immediately; the
+  code regenerates when the table is saved (**File > Save Project** or Ctrl+S).
+
 ## [1.3.3] - 2026-10-28
 
 ### Added
