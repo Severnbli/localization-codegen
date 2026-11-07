@@ -31,7 +31,7 @@ namespace Severnbli.LocalizationCodegen.Editor
             public static readonly GUIContent AssetTables = new GUIContent("Asset Tables",
                 "Generate classes for asset table collections. Disabling this deletes the matching generated files on the next run.");
             public static readonly GUIContent AutoRegenerate = new GUIContent("Regenerate On Changes",
-                "Automatically regenerate when table collections or entries change.");
+                "Automatically regenerate when table assets are saved or change on disk.");
             public static readonly GUIContent RegenerateSilently = new GUIContent("Silently On Settings Change",
                 "Regenerate without asking when a setting that changes the generated code is edited. " +
                 "Off asks first.");
