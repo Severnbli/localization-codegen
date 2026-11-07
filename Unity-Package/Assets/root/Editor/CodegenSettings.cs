@@ -22,6 +22,8 @@ namespace Severnbli.LocalizationCodegen.Editor
         [SerializeField] private string lastOutputFolder;
         [SerializeField] private string[] generatedPaths = new string[0];
         [SerializeField] private string lastAsmdefPath;
+        // Collection and shared table data assets seen by the last run, to recognise their deletion.
+        [SerializeField] private string[] tableAssetPaths = new string[0];
 
         // Incremental generation (B8) and staleness (A6).
         [SerializeField] private string lastModelHash;
@@ -57,6 +59,7 @@ namespace Severnbli.LocalizationCodegen.Editor
         public string LastOutputFolder { get => lastOutputFolder; set => lastOutputFolder = value; }
         public string[] GeneratedPaths { get => generatedPaths ?? (generatedPaths = new string[0]); set => generatedPaths = value; }
         public string LastAsmdefPath { get => lastAsmdefPath; set => lastAsmdefPath = value; }
+        public string[] TableAssetPaths { get => tableAssetPaths ?? (tableAssetPaths = new string[0]); set => tableAssetPaths = value; }
         public string LastModelHash { get => lastModelHash; set => lastModelHash = value; }
         public string[] CollectionHashes { get => collectionHashes ?? (collectionHashes = new string[0]); set => collectionHashes = value; }
 

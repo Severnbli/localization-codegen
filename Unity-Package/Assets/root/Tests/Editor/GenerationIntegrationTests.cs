@@ -29,6 +29,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
         string m_LastOutputFolder;
         string[] m_GeneratedPaths;
         string[] m_CollectionHashes;
+        string[] m_TableAssetPaths;
         string m_LastModelHash;
 
         [SetUp]
@@ -47,6 +48,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_LastOutputFolder = m_Settings.LastOutputFolder;
             m_GeneratedPaths = m_Settings.GeneratedPaths;
             m_CollectionHashes = m_Settings.CollectionHashes;
+            m_TableAssetPaths = m_Settings.TableAssetPaths;
             m_LastModelHash = m_Settings.LastModelHash;
 
             if (AssetDatabase.IsValidFolder(TestRoot))
@@ -87,6 +89,7 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
             m_Settings.LastOutputFolder = m_LastOutputFolder;
             m_Settings.GeneratedPaths = m_GeneratedPaths;
             m_Settings.CollectionHashes = m_CollectionHashes;
+            m_Settings.TableAssetPaths = m_TableAssetPaths;
             m_Settings.LastModelHash = m_LastModelHash;
             m_Settings.SaveSettings();
 
@@ -169,6 +172,53 @@ namespace Severnbli.LocalizationCodegen.Editor.Tests
 
             CollectionAssert.IsEmpty(
                 System.Array.FindAll(m_Settings.CollectionHashes, h => h.StartsWith("S|RemovedCollection|")));
+        }
+
+        [Test]
+        public void Run_RecordsTheCollectionAndSharedDataPaths()
+        {
+            var run = CodeGenerator.Run(new GenerateOptions { PromptOnMassDeletion = false, AllowInBatchMode = true });
+            Assert.IsTrue(run.Success, run.Error);
+
+            CollectionAssert.Contains(m_Settings.TableAssetPaths, AssetDatabase.GetAssetPath(m_Collection));
+            CollectionAssert.Contains(m_Settings.TableAssetPaths, AssetDatabase.GetAssetPath(m_Collection.SharedData));
+        }
+
+        [Test]
+        public void DeletedCollection_RemovesItsFile_EvenWhenItWasTheLastOne()
+        {
+            var firstRun = CodeGenerator.Run(new GenerateOptions { PromptOnMassDeletion = false, AllowInBatchMode = true });
+            Assert.IsTrue(firstRun.Success, firstRun.Error);
+
+            var path = TestRoot + "/OutA/CodegenIntegration.g.cs";
+            Assert.IsTrue(File.Exists(path));
+
+            AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(m_Collection.SharedData));
+            AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(m_Collection));
+
+            var secondRun = CodeGenerator.Run(new GenerateOptions
+            {
+                IsAutomatic = true, TablesDeleted = true, AllowInBatchMode = true
+            });
+            Assert.IsTrue(secondRun.Success, secondRun.Error);
+            Assert.IsFalse(File.Exists(path), "The file of a deleted collection must be removed.");
+        }
+
+        [Test]
+        public void CollectionWithDeletedSharedData_RemovesItsFile()
+        {
+            var firstRun = CodeGenerator.Run(new GenerateOptions { PromptOnMassDeletion = false, AllowInBatchMode = true });
+            Assert.IsTrue(firstRun.Success, firstRun.Error);
+
+            var path = TestRoot + "/OutA/CodegenIntegration.g.cs";
+            AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(m_Collection.SharedData));
+
+            var secondRun = CodeGenerator.Run(new GenerateOptions
+            {
+                IsAutomatic = true, TablesDeleted = true, AllowInBatchMode = true
+            });
+            Assert.IsTrue(secondRun.Success, secondRun.Error);
+            Assert.IsFalse(File.Exists(path), "A collection that lost its shared table data is being deleted.");
         }
 
         [Test]
