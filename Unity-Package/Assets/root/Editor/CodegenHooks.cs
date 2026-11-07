@@ -1,11 +1,11 @@
 ﻿using UnityEditor;
-using UnityEditor.Localization;
 using UnityEngine;
 
 namespace Severnbli.LocalizationCodegen.Editor
 {
     /// <summary>
-    /// Coalesces localization editor events into one debounced generation pass.
+    /// Coalesces dirty marks into one debounced generation pass. Table edits mark the output dirty only once the
+    /// table assets are saved (see <see cref="CodegenAssetPostprocessor"/>), not on every in-memory edit.
     /// The dirty flag lives in <see cref="SessionState"/> so it survives a domain reload.
     /// </summary>
     [InitializeOnLoad]
@@ -13,6 +13,7 @@ namespace Severnbli.LocalizationCodegen.Editor
     {
         const string DirtyKey = "LocalizationCodegen.Dirty";
         const string WizardShownKey = "LocalizationCodegen.WizardShown";
+        const string TablesDeletedKey = "LocalizationCodegen.TablesDeleted";
 
         const double DebounceSeconds = 0.5;
 
@@ -23,19 +24,6 @@ namespace Severnbli.LocalizationCodegen.Editor
         {
             var settings = CodegenSettings.instance;
             settings.EnsureMigrated();
-
-            var events = LocalizationEditorSettings.EditorEvents;
-            events.CollectionAdded += _ => MarkDirtyExternal();
-            events.CollectionRemoved += _ => MarkDirtyExternal();
-            events.CollectionModified += (_, __) => MarkDirtyExternal();
-            events.TableEntryAdded += (_, __) => MarkDirtyExternal();
-            events.TableEntryRemoved += (_, __) => MarkDirtyExternal();
-            events.TableEntryModified += _ => MarkDirtyExternal();
-            events.AssetTableEntryAdded += (_, __, ___) => MarkDirtyExternal();
-            events.AssetTableEntryRemoved += (_, __, ___, ____) => MarkDirtyExternal();
-            events.LocaleAdded += _ => MarkDirtyExternal();
-            events.LocaleRemoved += _ => MarkDirtyExternal();
-            events.LocaleSortOrderChanged += (_, __) => MarkDirtyExternal();
 
             if (SessionState.GetBool(DirtyKey, false))
                 s_LastDirtyTime = EditorApplication.timeSinceStartup;
@@ -49,6 +37,13 @@ namespace Severnbli.LocalizationCodegen.Editor
         {
             SessionState.SetBool(DirtyKey, true);
             s_LastDirtyTime = EditorApplication.timeSinceStartup;
+        }
+
+        /// <summary>Marks the output stale after table collection assets were deleted, so their files go too.</summary>
+        internal static void MarkTablesDeleted()
+        {
+            SessionState.SetBool(TablesDeletedKey, true);
+            MarkDirtyExternal();
         }
 
         static void Tick()
@@ -77,14 +72,14 @@ namespace Severnbli.LocalizationCodegen.Editor
                 return;
 
             var settings = CodegenSettings.instance;
-            if (!settings.SetupCompleted || !settings.AutoRegenerate)
-            {
-                SessionState.SetBool(DirtyKey, false);
-                return;
-            }
-
+            var tablesDeleted = SessionState.GetBool(TablesDeletedKey, false);
             SessionState.SetBool(DirtyKey, false);
-            CodeGenerator.Run(new GenerateOptions { IsAutomatic = true });
+            SessionState.SetBool(TablesDeletedKey, false);
+
+            if (!settings.SetupCompleted || !settings.AutoRegenerate)
+                return;
+
+            CodeGenerator.Run(new GenerateOptions { IsAutomatic = true, TablesDeleted = tablesDeleted });
         }
 
         static void CheckStaleness()

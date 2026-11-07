@@ -6,7 +6,8 @@ using UnityEngine.Localization.Tables;
 namespace Severnbli.LocalizationCodegen.Editor
 {
     /// <summary>
-    /// Detects table assets changed outside the editor (git pull, merge, revert) and marks the output stale.
+    /// Detects saved or imported table assets (table save in the editor, git pull, merge, revert) and marks the
+    /// output stale. This is the only trigger for automatic regeneration on table changes.
     /// </summary>
     internal sealed class CodegenAssetPostprocessor : AssetPostprocessor
     {
@@ -22,10 +23,14 @@ namespace Severnbli.LocalizationCodegen.Editor
                 if (!settings.SetupCompleted || !settings.AutoRegenerate)
                     return;
 
-                if (ContainsLocalizationAsset(importedAssets) ||
-                    ContainsLocalizationAsset(movedAssets) ||
-                    ContainsAssetPath(deletedAssets) ||
-                    ContainsAssetPath(movedFromAssetPaths))
+                if (ContainsTableAsset(deletedAssets, settings.TableAssetPaths))
+                {
+                    CodegenHooks.MarkTablesDeleted();
+                }
+                else if (ContainsLocalizationAsset(importedAssets) ||
+                         ContainsLocalizationAsset(movedAssets) ||
+                         ContainsAssetPath(deletedAssets) ||
+                         ContainsAssetPath(movedFromAssetPaths))
                 {
                     CodegenHooks.MarkDirtyExternal();
                 }
@@ -55,6 +60,32 @@ namespace Severnbli.LocalizationCodegen.Editor
                     typeof(StringTable).IsAssignableFrom(type) ||
                     typeof(AssetTable).IsAssignableFrom(type))
                     return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// True when a deleted path is a collection or shared table data asset the last run read, or a folder that
+        /// held one. Deleted assets can no longer be loaded, so their type is known only from that list.
+        /// </summary>
+        static bool ContainsTableAsset(string[] deletedPaths, string[] tableAssetPaths)
+        {
+            if (deletedPaths == null || tableAssetPaths == null || tableAssetPaths.Length == 0)
+                return false;
+
+            foreach (var deleted in deletedPaths)
+            {
+                if (string.IsNullOrEmpty(deleted))
+                    continue;
+                var folder = deleted.TrimEnd('/') + "/";
+                foreach (var table in tableAssetPaths)
+                {
+                    if (string.IsNullOrEmpty(table))
+                        continue;
+                    if (string.Equals(table, deleted, StringComparison.Ordinal) ||
+                        table.StartsWith(folder, StringComparison.Ordinal))
+                        return true;
+                }
             }
             return false;
         }

@@ -58,7 +58,7 @@ label.text = Ui.HelloWorld;
 | 💬 **Smart strings** | Entries with placeholders become methods with typed positional and named parameters |
 | 🔗 **Reference members** | Optional `Ref` class with `LocalizedString` / `LocalizedAsset<T>` references that follow locale changes |
 | ⚡ **UniTask** | Optional `…Async` members returning `UniTask`, with cancellation |
-| 🔁 **Automatic regeneration** | Debounced regeneration after table edits, including changes pulled from version control |
+| 🔁 **Automatic regeneration** | Regeneration when tables are saved, including changes pulled from version control |
 | 🧪 **CI ready** | Batch mode entry points to regenerate, or to fail when generated code is out of date |
 | 🪄 **First-run wizard** | A setup wizard opens after the package is first imported |
 
@@ -79,7 +79,7 @@ label.text = Ui.HelloWorld;
    label.text = Ui.HelloWorld;
    ```
 
-Edit your tables as usual – the classes regenerate on their own.
+Edit your tables as usual – the classes regenerate when you save them.
 
 ## Installation
 
@@ -134,7 +134,7 @@ Add the scoped registry and the dependency to `Packages/manifest.json`:
     }
   ],
   "dependencies": {
-    "com.severnbli.localization-codegen": "1.3.3"
+    "com.severnbli.localization-codegen": "1.3.4"
   }
 }
 ```
@@ -378,7 +378,7 @@ Open **Project Settings > Localization Codegen**, or **Window > Localization Cod
 | Output Folder | `Assets/Generated/Localization` | Must be inside `Assets`. Changing it removes generated files from the old folder. Inside another `.asmdef`, you are offered to add the references the code needs. |
 | String Tables | on | Generate classes for string table collections. Disabling deletes the matching files on the next run. |
 | Asset Tables | on | Generate classes for asset table collections. Disabling deletes the matching files on the next run. |
-| Regenerate On Changes | on | Debounced automatic regeneration after table edits and external (VCS) changes. |
+| Regenerate On Changes | on | Automatic regeneration when table assets are saved (**File > Save Project** or Ctrl+S) and after external (VCS) changes. |
 | Silently On Settings Change | off | Regenerate without asking when a setting that changes the generated code is edited. Off asks first. Needs **Regenerate On Changes**. |
 | On Metadata Edit | off | Regenerate after every edit of the Smart Parameter Types metadata. Off regenerates when the table is saved. Needs **Regenerate On Changes**. |
 | Generate Reference Members | off | Emit the nested [`Ref` class](#reference-members). |

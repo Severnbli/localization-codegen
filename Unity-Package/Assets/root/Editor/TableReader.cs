@@ -17,6 +17,9 @@ namespace Severnbli.LocalizationCodegen.Editor
         public readonly List<TableModel> Models = new List<TableModel>();
         public readonly List<string> Warnings = new List<string>();
         public int Failed;
+
+        /// <summary>Asset paths of the collections read and of their shared table data.</summary>
+        public readonly List<string> AssetPaths = new List<string>();
     }
 
     /// <summary>
@@ -37,7 +40,11 @@ namespace Severnbli.LocalizationCodegen.Editor
             CollectGlobalVariableGroups();
         }
 
-        public ReaderResult Read(bool readStringTables, bool readAssetTables)
+        /// <param name="tablesDeleted">
+        /// Table assets were just deleted, so a collection without shared table data is being removed: it is skipped
+        /// as if it no longer existed instead of counting as a failed read that would block cleanup.
+        /// </param>
+        public ReaderResult Read(bool readStringTables, bool readAssetTables, bool tablesDeleted = false)
         {
             var result = new ReaderResult();
 
@@ -45,6 +52,9 @@ namespace Severnbli.LocalizationCodegen.Editor
             {
                 foreach (var collection in Sort(LocalizationEditorSettings.GetStringTableCollections()))
                 {
+                    AddAssetPaths(collection, result);
+                    if (tablesDeleted && collection.SharedData == null)
+                        continue;
                     try
                     {
                         result.Models.Add(ReadCollection(collection, false, result.Warnings));
@@ -61,6 +71,9 @@ namespace Severnbli.LocalizationCodegen.Editor
             {
                 foreach (var collection in Sort(LocalizationEditorSettings.GetAssetTableCollections()))
                 {
+                    AddAssetPaths(collection, result);
+                    if (tablesDeleted && collection.SharedData == null)
+                        continue;
                     try
                     {
                         result.Models.Add(ReadCollection(collection, true, result.Warnings));
@@ -74,6 +87,23 @@ namespace Severnbli.LocalizationCodegen.Editor
             }
 
             return result;
+        }
+
+        static void AddAssetPaths(LocalizationTableCollection collection, ReaderResult result)
+        {
+            try
+            {
+                var path = AssetDatabase.GetAssetPath(collection);
+                if (!string.IsNullOrEmpty(path))
+                    result.AssetPaths.Add(path);
+                var sharedPath = collection.SharedData != null ? AssetDatabase.GetAssetPath(collection.SharedData) : null;
+                if (!string.IsNullOrEmpty(sharedPath))
+                    result.AssetPaths.Add(sharedPath);
+            }
+            catch
+            {
+                // The paths only help to recognise deletions; a broken collection is reported by the read itself.
+            }
         }
 
         static IEnumerable<LocalizationTableCollection> Sort(IEnumerable<LocalizationTableCollection> collections)
