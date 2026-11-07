@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.4.0] - 2026-11-07
+## [1.3.4] - 2026-11-07
 
 ### Fixed
 - Deleting table collection assets now always deletes their generated files (#14). Before, the files stayed when
